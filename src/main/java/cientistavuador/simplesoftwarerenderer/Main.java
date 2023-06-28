@@ -107,10 +107,15 @@ public class Main {
     public static boolean D_PRESSED = false;
     public static boolean SHIFT_PRESSED = false;
     public static boolean SPACE_PRESSED = false;
+    public static boolean ALT_PRESSED = false;
+    public static boolean CTRL_PRESSED = false;
 
     public static int MOUSE_POS_X = 0;
     public static int MOUSE_POS_Y = 0;
     
+    public static boolean HIDE_CURSOR = false;
+    public static boolean CURSOR_HIDDEN = false;
+
     /**
      * @param args the command line arguments
      */
@@ -123,7 +128,7 @@ public class Main {
         }
 
         JFrame frame = new JFrame("Parkour Game");
-        frame.setSize(800, 600);
+        frame.setSize(Main.WIDTH, Main.HEIGHT);
         frame.setResizable(false);
         frame.setLocationRelativeTo(null);
         frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
@@ -147,6 +152,10 @@ public class Main {
                         SHIFT_PRESSED = true;
                     case KeyEvent.VK_SPACE ->
                         SPACE_PRESSED = true;
+                    case KeyEvent.VK_ALT ->
+                        ALT_PRESSED = true;
+                    case KeyEvent.VK_CONTROL ->
+                        CTRL_PRESSED = true;
                     case KeyEvent.VK_ESCAPE ->
                         System.exit(0);
                 }
@@ -168,6 +177,10 @@ public class Main {
                         SHIFT_PRESSED = false;
                     case KeyEvent.VK_SPACE ->
                         SPACE_PRESSED = false;
+                    case KeyEvent.VK_ALT ->
+                        ALT_PRESSED = false;
+                    case KeyEvent.VK_CONTROL ->
+                        CTRL_PRESSED = false;
                 }
                 Game.get().keyCallback(e, false);
             }
@@ -180,33 +193,41 @@ public class Main {
                     return;
                 }
 
-                int centerX = frame.getX() + (800 / 2);
-                int centerY = frame.getY() + (600 / 2);
+                int centerX = frame.getX() + (Main.WIDTH / 2);
+                int centerY = frame.getY() + (Main.HEIGHT / 2);
 
                 int screenX = e.getXOnScreen();
                 int screenY = e.getYOnScreen();
-
+                
                 MOUSE_POS_X = screenX - centerX;
                 MOUSE_POS_Y = centerY - screenY;
-
-                robot.mouseMove(centerX, centerY);
+                
+                Game.get().mouseCursorMoved(MOUSE_POS_X, MOUSE_POS_Y);
+                
+                if (Main.CURSOR_HIDDEN) {
+                    robot.mouseMove(centerX, centerY);
+                }
             }
         });
 
         frame.setVisible(true);
 
+        frame.setSize(
+                frame.getWidth() + (frame.getInsets().left + frame.getInsets().right),
+                frame.getHeight() + (frame.getInsets().top + frame.getInsets().bottom)
+        );
+
         BufferedImage cursorImg = new BufferedImage(16, 16, BufferedImage.TYPE_INT_ARGB);
 
-        Cursor blankCursor = Toolkit.getDefaultToolkit().createCustomCursor(
-                cursorImg, new Point(0, 0), "blank cursor");
+        Cursor blankCursor = Toolkit.getDefaultToolkit().createCustomCursor(cursorImg, new Point(0, 0), "blank cursor");
 
-        canvas.setCursor(blankCursor);
+        //canvas.setCursor(blankCursor);
         canvas.requestFocus();
         
         try {
             SwingUtilities.invokeAndWait(() -> {
                 Game.get(); //static initialize
-                
+
                 Game.get().start();
             });
         } catch (InterruptedException | InvocationTargetException ex) {
@@ -240,16 +261,25 @@ public class Main {
                         canvas.createBufferStrategy(2);
                         return;
                     }
-
+                    
+                    if (CURSOR_HIDDEN && !HIDE_CURSOR) {
+                        frame.setCursor(null);
+                        CURSOR_HIDDEN = false;
+                    }
+                    if (!CURSOR_HIDDEN && HIDE_CURSOR) {
+                        frame.setCursor(blankCursor);
+                        CURSOR_HIDDEN = true;
+                    }
+                    
                     Runnable r;
                     while ((r = MAIN_TASKS.poll()) != null) {
                         r.run();
                     }
 
                     Graphics2D g = (Graphics2D) st.getDrawGraphics();
-                    
+
                     Game.get().loop(g);
-                    
+
                     st.show();
                     g.dispose();
                 });

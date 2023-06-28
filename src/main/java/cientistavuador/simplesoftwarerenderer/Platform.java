@@ -5,6 +5,7 @@
  */
 package cientistavuador.simplesoftwarerenderer;
 
+import cientistavuador.simplesoftwarerenderer.camera.Camera;
 import java.awt.Color;
 import java.awt.Graphics2D;
 import org.joml.Matrix4f;
@@ -22,7 +23,6 @@ public class Platform {
 
     //recycled math objects
     private static final Matrix4f model = new Matrix4f();
-    private static final Matrix4f view = new Matrix4f();
     private static final Matrix4f projection = new Matrix4f();
 
     private static final Vector4f a = new Vector4f();
@@ -209,10 +209,8 @@ public class Platform {
         b.lerp(e, 0.5f, be);
 
         model.identity().translate(position);
-        cam.getView(view);
-        cam.getProjection(projection);
-
-        projection.mul(view).mul(model);
+        
+        projection.set(cam.getProjectionView()).mul(model);
         
         projection.transform(a);
         projection.transform(b);
@@ -255,31 +253,6 @@ public class Platform {
 
         drawLine(g, c, ce);
         drawLine(g, ce, e);
-    }
-
-    public boolean checkCollision(Camera cam) {
-        float platMaxX = position.x() + SIZE;
-        float platMaxY = position.y() + HEIGHT;
-        float platMaxZ = position.z() + SIZE;
-
-        float platMinX = position.x() - SIZE;
-        float platMinY = position.y() - HEIGHT;
-        float platMinZ = position.z() - SIZE;
-
-        float camHeight = 0.07f;
-        float camWidth = 0.03f;
-
-        float camMaxX = cam.getPosition().x() + camWidth;
-        float camMaxY = cam.getPosition().y() + camHeight;
-        float camMaxZ = cam.getPosition().z() + camWidth;
-
-        float camMinX = cam.getPosition().x() - camWidth;
-        float camMinY = cam.getPosition().y() - camHeight;
-        float camMinZ = cam.getPosition().z() - camWidth;
-
-        return (platMinX <= camMaxX && platMaxX >= camMinX)
-                && (platMinY <= camMaxY && platMaxY >= camMinY)
-                && (platMinZ <= camMaxZ && platMaxZ >= camMinZ);
     }
 
 }

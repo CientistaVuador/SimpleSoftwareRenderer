@@ -13,6 +13,7 @@ import cientistavuador.simplesoftwarerenderer.Platform.MoveableXPlatform;
 import cientistavuador.simplesoftwarerenderer.Platform.MoveableYPlatform;
 import cientistavuador.simplesoftwarerenderer.Platform.StartLevelPlatform;
 import cientistavuador.simplesoftwarerenderer.Platform.UpdatablePlatform;
+import cientistavuador.simplesoftwarerenderer.camera.Camera;
 
 /**
  *
@@ -74,17 +75,6 @@ public class Level {
             }
             platforms[i].render(g, cam);
         }
-    }
-
-    public Platform getCollision(Camera cam) {
-        for (int i = 0; i < platforms.length; i++) {
-            Platform platform = platforms[i];
-
-            if (platform.checkCollision(cam)) {
-                return platform;
-            }
-        }
-        return null;
     }
 
 }
