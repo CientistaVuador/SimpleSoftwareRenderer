@@ -40,6 +40,8 @@ public class Game {
     }
 
     public void loop(Graphics2D g) {
+        camera.updateMovement();
+        
         g.setColor(Color.BLACK);
         g.fillRect(0, 0, 800, 600);
         
@@ -49,7 +51,7 @@ public class Game {
             g.setFont(BIG_FONT);
             g.setColor(Color.YELLOW);
             g.drawString("SimpleSoftwareRenderer", 0, BIG_FONT.getSize());
-
+            
             String[] wallOfText = {
                 "FPS: " + Main.FPS,
                 "X: " + format(camera.getPosition().x()),
@@ -62,7 +64,7 @@ public class Game {
                 "  Ctrl - Unlock/Lock mouse",
                 "  T - Hide This Wall of Text."
             };
-
+            
             int offset = SMALL_FONT.getSize();
             int offsetBig = BIG_FONT.getSize();
             g.setFont(SMALL_FONT);
@@ -90,7 +92,7 @@ public class Game {
     }
 
     public void mouseCursorMoved(double x, double y) {
-
+        camera.mouseCursorMoved(x, y);
     }
 
 }
