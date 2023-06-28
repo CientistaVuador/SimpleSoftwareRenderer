@@ -9,9 +9,13 @@ import java.awt.Color;
 import java.awt.Graphics2D;
 import java.awt.event.KeyEvent;
 import cientistavuador.simplesoftwarerenderer.camera.FreeCamera;
+import cientistavuador.simplesoftwarerenderer.render.AWTInterop;
+import cientistavuador.simplesoftwarerenderer.render.Surface;
+import cientistavuador.simplesoftwarerenderer.render.Texture;
 import cientistavuador.simplesoftwarerenderer.resources.image.ImageResources;
 import java.awt.Font;
 import java.awt.image.BufferedImage;
+import org.joml.Vector4f;
 
 /**
  *
@@ -29,10 +33,12 @@ public class Game {
     private final Font SMALL_FONT = new Font(Font.MONOSPACED, Font.PLAIN, 14);
     private boolean textEnabled = true;
     private final FreeCamera camera = new FreeCamera();
-    private final BufferedImage testImage = ImageResources.read("pointlight.png");
+    Surface surface = new Surface();
+    private BufferedImage testImage;
 
     private Game() {
-
+        surface.clearColor(0.2f, 0.4f, 0.6f);
+        testImage = AWTInterop.fromTexture(surface.getColorBufferTexture());
     }
 
     public void start() {
@@ -40,6 +46,9 @@ public class Game {
     }
 
     public void loop(Graphics2D g) {
+        surface.clearColor(0.2f, 0.4f, 0.6f);
+        testImage = AWTInterop.fromTexture(surface.getColorBufferTexture());
+        
         camera.updateMovement();
         
         g.setColor(Color.BLACK);

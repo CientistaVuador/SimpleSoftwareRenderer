@@ -26,10 +26,86 @@
  */
 package cientistavuador.simplesoftwarerenderer.render;
 
+import cientistavuador.simplesoftwarerenderer.util.Pixels;
+import java.awt.image.BufferedImage;
+import org.joml.Vector4f;
+
 /**
  *
  * @author Cien
  */
 public class AWTInterop {
     
+    public static class BufferedTexture implements Texture {
+
+        private final BufferedImage image;
+
+        public BufferedTexture(BufferedImage image) {
+            this.image = image;
+        }
+
+        public BufferedImage getImage() {
+            return image;
+        }
+        
+        @Override
+        public int width() {
+            return image.getWidth();
+        }
+
+        @Override
+        public int height() {
+            return image.getHeight();
+        }
+
+        @Override
+        public void fetch(int x, int y, Vector4f result) {
+            int rgba = image.getRGB(x, (height() - 1) - y);
+            
+            result.set(
+                    Pixels.decodeNormalized(rgba, 1),
+                    Pixels.decodeNormalized(rgba, 2),
+                    Pixels.decodeNormalized(rgba, 3),
+                    Pixels.decodeNormalized(rgba, 0)
+            );
+        }
+    }
+    
+    public static Texture toTexture(BufferedImage image) {
+        return new BufferedTexture(image);
+    }
+    
+    public static BufferedImage fromTexture(Texture t) {
+        if (t instanceof BufferedTexture e) {
+            return e.getImage();
+        }
+        if (t == null) {
+            throw new NullPointerException("Texture is null.");
+        }
+        
+        int width = t.width();
+        int height = t.height();
+        BufferedImage data = new BufferedImage(width, height, BufferedImage.TYPE_INT_ARGB);
+        
+        Vector4f cache = new Vector4f();
+        
+        for (int i = 0; i < width*height; i++) {
+            int x = i % width;
+            int y = i / width;
+            
+            t.fetch(x, (height - y) - 1, cache);
+            data.setRGB(x, y, Pixels.encodeNormalized(
+                    cache.w(),
+                    cache.x(),
+                    cache.y(),
+                    cache.z()
+            ));
+        }
+        
+        return data;
+    }
+    
+    private AWTInterop() {
+        
+    }
 }
