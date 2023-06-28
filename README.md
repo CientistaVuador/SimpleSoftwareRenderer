@@ -1,5 +1,5 @@
-# BakedLightingExperiment
+# SimpleSoftwareRenderer
 
-Experimenting with baked lighting.
+Experimenting with software rendering.
 
-Java 17 and OpenGL 3.3 is required.
+Java 17 is required.
