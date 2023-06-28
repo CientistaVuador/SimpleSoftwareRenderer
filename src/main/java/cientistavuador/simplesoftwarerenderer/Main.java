@@ -127,7 +127,7 @@ public class Main {
             throw new RuntimeException(ex);
         }
 
-        JFrame frame = new JFrame("Parkour Game");
+        JFrame frame = new JFrame(Main.WINDOW_TITLE);
         frame.setSize(Main.WIDTH, Main.HEIGHT);
         frame.setResizable(false);
         frame.setLocationRelativeTo(null);
@@ -245,7 +245,7 @@ public class Main {
 
             Main.NUMBER_OF_DRAWCALLS = 0;
             Main.NUMBER_OF_VERTICES = 0;
-            Main.WINDOW_TITLE = "BakedLightingExperiment - FPS: " + Main.FPS;
+            Main.WINDOW_TITLE = "SimpleSoftwareRenderer - FPS: " + Main.FPS;
 
             if (SPIKE_LAG_WARNINGS) {
                 int tpfFps = (int) (1.0 / Main.TPF);
@@ -296,6 +296,13 @@ public class Main {
 
             if (System.currentTimeMillis() >= nextTitleUpdate) {
                 nextTitleUpdate = System.currentTimeMillis() + 100;
+                try {
+                    SwingUtilities.invokeAndWait(() -> {
+                        frame.setTitle(Main.WINDOW_TITLE);
+                    });
+                } catch (InterruptedException | InvocationTargetException ex) {
+                    throw new RuntimeException(ex);
+                }
             }
 
             Main.ONE_SECOND_COUNTER += Main.TPF;
