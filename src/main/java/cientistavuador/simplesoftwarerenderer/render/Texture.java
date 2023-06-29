@@ -36,8 +36,8 @@ public interface Texture {
     public int width();
     public int height();
     public default void sample(float x, float y, Vector4f result) {
-        int pX = (int) Math.floor((x - Math.floor(x)) * width());
-        int pY = (int) Math.floor((y - Math.floor(y)) * height());
+        int pX = (int) (Math.floor(Math.abs(x) * width()) % width());
+        int pY = (int) (Math.floor(Math.abs(y) * height()) % height());
         fetch(pX, pY, result);
     }
     public void fetch(int x, int y, Vector4f result);

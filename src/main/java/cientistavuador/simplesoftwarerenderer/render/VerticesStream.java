@@ -27,7 +27,6 @@
 package cientistavuador.simplesoftwarerenderer.render;
 
 import java.util.Arrays;
-import javax.swing.JFrame;
 import org.joml.Matrix4f;
 import org.joml.Vector4f;
 
@@ -73,7 +72,7 @@ public class VerticesStream {
         
         this.positionsIndex += 3;
         
-        return (this.positionsIndex / 3) - 1;
+        return (this.positionsIndex / 3);
     }
     
     public int texture(float u, float v) {
@@ -86,7 +85,7 @@ public class VerticesStream {
         
         this.uvsIndex += 2;
         
-        return (this.uvsIndex / 2) - 1;
+        return (this.uvsIndex / 2);
     }
     
     public int normal(float nX, float nY, float nZ) {
@@ -100,7 +99,7 @@ public class VerticesStream {
         
         this.normalsIndex += 3;
         
-        return (this.normalsIndex / 3) - 1;
+        return (this.normalsIndex / 3);
     }
     
     public int color(float r, float g, float b, float a) {
@@ -115,7 +114,7 @@ public class VerticesStream {
         
         this.colorsIndex += 4;
         
-        return (this.colorsIndex / 4) - 1;
+        return (this.colorsIndex / 4);
     }
     
     public void vertex(int positionIndex, int textureIndex, int normalIndex, int colorIndex) {
@@ -123,6 +122,8 @@ public class VerticesStream {
         float y = 0f;
         float z = 0f;
         if (positionIndex != 0) {
+            positionIndex--;
+            
             x = this.positions[(positionIndex * 3) + 0];
             y = this.positions[(positionIndex * 3) + 1];
             z = this.positions[(positionIndex * 3) + 2];
@@ -131,6 +132,8 @@ public class VerticesStream {
         float u = 0f;
         float v = 0f;
         if (textureIndex != 0) {
+            textureIndex--;
+            
             u = this.uvs[(textureIndex * 2) + 0];
             v = this.uvs[(textureIndex * 2) + 1];
         }
@@ -139,6 +142,8 @@ public class VerticesStream {
         float nY = 0f;
         float nZ = 1f;
         if (normalIndex != 0) {
+            normalIndex--;
+            
             nX = this.normals[(normalIndex * 3) + 0];
             nY = this.normals[(normalIndex * 3) + 1];
             nZ = this.normals[(normalIndex * 3) + 2];
@@ -149,6 +154,8 @@ public class VerticesStream {
         float b = 1f;
         float a = 1f;
         if (colorIndex != 0) {
+            colorIndex--;
+            
             r = this.colors[(colorIndex * 4) + 0];
             g = this.colors[(colorIndex * 4) + 1];
             b = this.colors[(colorIndex * 4) + 2];

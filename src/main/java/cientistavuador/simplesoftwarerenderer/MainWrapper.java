@@ -68,7 +68,8 @@ public class MainWrapper {
                     "Game has crashed!",
                     JOptionPane.ERROR_MESSAGE
             );
-            throw e;
+            e.printStackTrace(System.out);
+            System.exit(-1);
         }
     }
     

@@ -10,12 +10,14 @@ import java.awt.Graphics2D;
 import java.awt.event.KeyEvent;
 import cientistavuador.simplesoftwarerenderer.camera.FreeCamera;
 import cientistavuador.simplesoftwarerenderer.render.AWTInterop;
+import cientistavuador.simplesoftwarerenderer.render.Rasterizer;
 import cientistavuador.simplesoftwarerenderer.render.Surface;
 import cientistavuador.simplesoftwarerenderer.render.Texture;
+import cientistavuador.simplesoftwarerenderer.render.VerticesStream;
 import cientistavuador.simplesoftwarerenderer.resources.image.ImageResources;
 import java.awt.Font;
 import java.awt.image.BufferedImage;
-import org.joml.Vector4f;
+import org.joml.Matrix4f;
 
 /**
  *
@@ -33,28 +35,51 @@ public class Game {
     private final Font SMALL_FONT = new Font(Font.MONOSPACED, Font.PLAIN, 14);
     private boolean textEnabled = true;
     private final FreeCamera camera = new FreeCamera();
-    Surface surface = new Surface();
-    private BufferedImage testImage;
+    private final Surface surface = new Surface();
+    private final Texture texture = AWTInterop.toTexture(ImageResources.read("pointlight.png"));
+    private BufferedImage outputImage;
 
     private Game() {
-        surface.clearColor(0.2f, 0.4f, 0.6f);
-        testImage = AWTInterop.fromTexture(surface.getColorBufferTexture());
+        
     }
 
     public void start() {
-        
+        camera.setPosition(0, 0, 1f);
     }
 
     public void loop(Graphics2D g) {
-        surface.clearColor(0.2f, 0.4f, 0.6f);
-        testImage = AWTInterop.fromTexture(surface.getColorBufferTexture());
-        
         camera.updateMovement();
         
         g.setColor(Color.BLACK);
         g.fillRect(0, 0, 800, 600);
         
-        g.drawImage(testImage, 0, 0, Main.WIDTH, Main.HEIGHT, null);
+        surface.clearColor(0.2f, 0.4f, 0.6f);
+        
+        VerticesStream stream = new VerticesStream(new Matrix4f().set(this.camera.getProjectionView()), new Matrix4f());
+        
+        int leftDown = stream.position(-0.5f, -0.50f, 0.0f);
+        int rightDown = stream.position(0.5f, -0.50f, 0.0f);
+        int rightUp = stream.position(0.5f, 0.50f, 0.0f);
+        int leftUp = stream.position(-0.5f, 0.50f, 0.0f);
+        
+        int leftDownUv = stream.texture(0.0f + 0.0078125f, 0.0f + 0.0078125f);
+        int rightDownUv = stream.texture(1.0f - 0.0078125f, 0.0f + 0.0078125f);
+        int rightUpUv = stream.texture(1.0f - 0.0078125f, 1.0f - 0.0078125f);
+        int leftUpUv = stream.texture(0.0f + 0.0078125f, 1.0f - 0.0078125f);
+        
+        stream.vertex(leftDown, leftDownUv, 0, 0);
+        stream.vertex(rightDown, rightDownUv, 0, 0);
+        stream.vertex(rightUp, rightUpUv, 0, 0);
+        
+        stream.vertex(leftDown, leftDownUv, 0, 0);
+        stream.vertex(rightUp, rightUpUv, 0, 0);
+        stream.vertex(leftUp, leftUpUv, 0, 0);
+        
+        Rasterizer rasterizer = new Rasterizer(surface, this.texture, stream.vertices());
+        rasterizer.render();
+        
+        outputImage = AWTInterop.fromTexture(surface.getColorBufferTexture());
+        g.drawImage(outputImage, 0, 0, Main.WIDTH, Main.HEIGHT, null);
 
         if (this.textEnabled) {
             g.setFont(BIG_FONT);
