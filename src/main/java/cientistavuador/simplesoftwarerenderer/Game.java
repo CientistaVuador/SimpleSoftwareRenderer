@@ -13,7 +13,8 @@ import cientistavuador.simplesoftwarerenderer.render.AWTInterop;
 import cientistavuador.simplesoftwarerenderer.render.Rasterizer;
 import cientistavuador.simplesoftwarerenderer.render.Surface;
 import cientistavuador.simplesoftwarerenderer.render.Texture;
-import cientistavuador.simplesoftwarerenderer.render.VerticesStream;
+import cientistavuador.simplesoftwarerenderer.render.VerticesBuilder;
+import cientistavuador.simplesoftwarerenderer.render.VerticesProcessor;
 import cientistavuador.simplesoftwarerenderer.resources.image.ImageResources;
 import java.awt.Font;
 import java.awt.image.BufferedImage;
@@ -38,29 +39,15 @@ public class Game {
     private final Surface surface = new Surface();
     private final Texture texture = AWTInterop.toTexture(ImageResources.read("pointlight.png"));
     private BufferedImage outputImage;
+    private final float[] vertices;
 
     private Game() {
+        VerticesBuilder stream = new VerticesBuilder();
         
-    }
-
-    public void start() {
-        camera.setPosition(0, 0, 1f);
-    }
-
-    public void loop(Graphics2D g) {
-        camera.updateMovement();
-        
-        g.setColor(Color.BLACK);
-        g.fillRect(0, 0, 800, 600);
-        
-        surface.clearColor(0.2f, 0.4f, 0.6f);
-        
-        VerticesStream stream = new VerticesStream(new Matrix4f().set(this.camera.getProjectionView()), new Matrix4f());
-        
-        int leftDown = stream.position(-0.5f, -0.50f, 0.0f);
-        int rightDown = stream.position(0.5f, -0.50f, 0.0f);
-        int rightUp = stream.position(0.5f, 0.50f, 0.0f);
-        int leftUp = stream.position(-0.5f, 0.50f, 0.0f);
+        int leftDown = stream.position(-0.5f, -0.5f, 0.0f);
+        int rightDown = stream.position(0.5f, -0.5f, 0.0f);
+        int rightUp = stream.position(0.5f, 0.5f, 0.0f);
+        int leftUp = stream.position(-0.5f, 0.5f, 0.0f);
         
         int leftDownUv = stream.texture(0.0f + 0.0078125f, 0.0f + 0.0078125f);
         int rightDownUv = stream.texture(1.0f - 0.0078125f, 0.0f + 0.0078125f);
@@ -75,7 +62,23 @@ public class Game {
         stream.vertex(rightUp, rightUpUv, 0, 0);
         stream.vertex(leftUp, leftUpUv, 0, 0);
         
-        Rasterizer rasterizer = new Rasterizer(surface, this.texture, stream.vertices());
+        this.vertices = stream.vertices();
+    }
+
+    public void start() {
+        camera.setPosition(0, 0, 1f);
+    }
+
+    public void loop(Graphics2D g) {
+        camera.updateMovement();
+        
+        g.setColor(Color.BLACK);
+        g.fillRect(0, 0, 800, 600);
+        
+        surface.clearColor(0.2f, 0.4f, 0.6f);
+        
+        VerticesProcessor processor = new VerticesProcessor(this.vertices, new Matrix4f(this.camera.getProjectionView()), null);
+        Rasterizer rasterizer = new Rasterizer(surface, this.texture, processor.process());
         rasterizer.render();
         
         outputImage = AWTInterop.fromTexture(surface.getColorBufferTexture());
