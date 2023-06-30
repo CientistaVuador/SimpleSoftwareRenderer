@@ -33,7 +33,7 @@ import org.joml.Vector3f;
  *
  * @author Cien
  */
-public class VerticesBuilder {
+public class VertexBuilder {
 
     //local position, uv, normal, color
     public static final int LOCAL_VERTEX_SIZE = 3 + 2 + 3 + 4;
@@ -53,7 +53,7 @@ public class VerticesBuilder {
     private float[] vertices = new float[LOCAL_VERTEX_SIZE * 32];
     private int verticesIndex = 0;
 
-    public VerticesBuilder() {
+    public VertexBuilder() {
 
     }
 

@@ -40,7 +40,7 @@ import org.joml.Vector4f;
  *
  * @author Cien
  */
-public class VerticesProcessor {
+public class VertexProcessor {
 
     //camera position / w, inverse w, world position / w, uv / w, world normal / w, color / w
     public static final int PROCESSED_VERTEX_SIZE = 3 + 1 + 3 + 2 + 3 + 4;
@@ -62,7 +62,7 @@ public class VerticesProcessor {
     private float[] vertices = new float[PROCESSED_VERTEX_SIZE * 64];
     private int verticesIndex = 0;
 
-    public VerticesProcessor(float[] vertices, Matrix4f projectionView, Matrix4f model) {
+    public VertexProcessor(float[] vertices, Matrix4f projectionView, Matrix4f model) {
         this.localVertices = vertices;
         if (projectionView != null) {
             this.projectionView.set(projectionView);
@@ -96,11 +96,11 @@ public class VerticesProcessor {
 
         Vector4f cacheA = new Vector4f();
         Vector4f cacheB = new Vector4f();
-
-        for (int i = 0; i < (this.localVertices.length / (VerticesBuilder.LOCAL_VERTEX_SIZE * 3)); i++) {
-            int v0 = i * (VerticesBuilder.LOCAL_VERTEX_SIZE * 3);
-            int v1 = v0 + VerticesBuilder.LOCAL_VERTEX_SIZE;
-            int v2 = v1 + VerticesBuilder.LOCAL_VERTEX_SIZE;
+        
+        for (int i = 0; i < (this.localVertices.length / (VertexBuilder.LOCAL_VERTEX_SIZE * 3)); i++) {
+            int v0 = i * (VertexBuilder.LOCAL_VERTEX_SIZE * 3);
+            int v1 = v0 + VertexBuilder.LOCAL_VERTEX_SIZE;
+            int v2 = v1 + VertexBuilder.LOCAL_VERTEX_SIZE;
 
             //0
             float v0x = this.localVertices[v0 + 0];

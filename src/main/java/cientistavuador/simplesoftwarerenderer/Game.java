@@ -13,8 +13,8 @@ import cientistavuador.simplesoftwarerenderer.render.AWTInterop;
 import cientistavuador.simplesoftwarerenderer.render.Rasterizer;
 import cientistavuador.simplesoftwarerenderer.render.Surface;
 import cientistavuador.simplesoftwarerenderer.render.Texture;
-import cientistavuador.simplesoftwarerenderer.render.VerticesBuilder;
-import cientistavuador.simplesoftwarerenderer.render.VerticesProcessor;
+import cientistavuador.simplesoftwarerenderer.render.VertexBuilder;
+import cientistavuador.simplesoftwarerenderer.render.VertexProcessor;
 import cientistavuador.simplesoftwarerenderer.resources.image.ImageResources;
 import java.awt.Font;
 import java.awt.image.BufferedImage;
@@ -42,7 +42,7 @@ public class Game {
     private final float[] vertices;
 
     private Game() {
-        VerticesBuilder stream = new VerticesBuilder();
+        VertexBuilder stream = new VertexBuilder();
         
         int leftDown = stream.position(-0.5f, -0.5f, 0.0f);
         int rightDown = stream.position(0.5f, -0.5f, 0.0f);
@@ -77,7 +77,7 @@ public class Game {
         
         surface.clearColor(0.2f, 0.4f, 0.6f);
         
-        VerticesProcessor processor = new VerticesProcessor(this.vertices, new Matrix4f(this.camera.getProjectionView()), null);
+        VertexProcessor processor = new VertexProcessor(this.vertices, new Matrix4f(this.camera.getProjectionView()), null);
         Rasterizer rasterizer = new Rasterizer(surface, this.texture, processor.process());
         rasterizer.render();
         

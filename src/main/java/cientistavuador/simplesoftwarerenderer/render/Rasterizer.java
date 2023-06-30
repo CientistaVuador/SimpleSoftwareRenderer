@@ -62,10 +62,10 @@ public class Rasterizer {
         Vector4f textureColor = new Vector4f();
         float width = this.surface.getWidth();
         float height = this.surface.getHeight();
-        for (int i = 0; i < (this.vertices.length / (VerticesProcessor.PROCESSED_VERTEX_SIZE * 3)); i++) {
-            int v0 = i * (VerticesProcessor.PROCESSED_VERTEX_SIZE * 3);
-            int v1 = v0 + VerticesProcessor.PROCESSED_VERTEX_SIZE;
-            int v2 = v1 + VerticesProcessor.PROCESSED_VERTEX_SIZE;
+        for (int i = 0; i < (this.vertices.length / (VertexProcessor.PROCESSED_VERTEX_SIZE * 3)); i++) {
+            int v0 = i * (VertexProcessor.PROCESSED_VERTEX_SIZE * 3);
+            int v1 = v0 + VertexProcessor.PROCESSED_VERTEX_SIZE;
+            int v2 = v1 + VertexProcessor.PROCESSED_VERTEX_SIZE;
 
             //0
             float v0cx = this.vertices[v0 + 0] * width;
