@@ -68,60 +68,63 @@ public class Rasterizer {
             int v2 = v1 + VertexProcessor.PROCESSED_VERTEX_SIZE;
 
             //0
-            float v0cx = this.vertices[v0 + 0] * width;
-            float v0cy = this.vertices[v0 + 1] * height;
-            float v0cz = this.vertices[v0 + 2];
-            float v0invw = this.vertices[v0 + 3];
-            float v0x = this.vertices[v0 + 4];
-            float v0y = this.vertices[v0 + 5];
-            float v0z = this.vertices[v0 + 6];
-            float v0u = this.vertices[v0 + 7];
-            float v0v = this.vertices[v0 + 8];
-            float v0nx = this.vertices[v0 + 9];
-            float v0ny = this.vertices[v0 + 10];
-            float v0nz = this.vertices[v0 + 11];
-            float v0r = this.vertices[v0 + 12];
-            float v0g = this.vertices[v0 + 13];
-            float v0b = this.vertices[v0 + 14];
-            float v0a = this.vertices[v0 + 15];
+            float v0cwinv = 1f / this.vertices[v0 + 3];
+            
+            float v0cx = ((this.vertices[v0 + 0] * v0cwinv) + 1.0f) * 0.5f * width;
+            float v0cy = ((this.vertices[v0 + 1] * v0cwinv) + 1.0f) * 0.5f * height;
+            float v0cz = ((this.vertices[v0 + 2] * v0cwinv) + 1.0f) * 0.5f;
+            float v0x = this.vertices[v0 + 4] * v0cwinv;
+            float v0y = this.vertices[v0 + 5] * v0cwinv;
+            float v0z = this.vertices[v0 + 6] * v0cwinv;
+            float v0u = this.vertices[v0 + 7] * v0cwinv;
+            float v0v = this.vertices[v0 + 8] * v0cwinv;
+            float v0nx = this.vertices[v0 + 9] * v0cwinv;
+            float v0ny = this.vertices[v0 + 10] * v0cwinv;
+            float v0nz = this.vertices[v0 + 11] * v0cwinv;
+            float v0r = this.vertices[v0 + 12] * v0cwinv;
+            float v0g = this.vertices[v0 + 13] * v0cwinv;
+            float v0b = this.vertices[v0 + 14] * v0cwinv;
+            float v0a = this.vertices[v0 + 15] * v0cwinv;
             //
 
             //1
-            float v1cx = this.vertices[v1 + 0] * width;
-            float v1cy = this.vertices[v1 + 1] * height;
-            float v1cz = this.vertices[v1 + 2];
-            float v1invw = this.vertices[v1 + 3];
-            float v1x = this.vertices[v1 + 4];
-            float v1y = this.vertices[v1 + 5];
-            float v1z = this.vertices[v1 + 6];
-            float v1u = this.vertices[v1 + 7];
-            float v1v = this.vertices[v1 + 8];
-            float v1nx = this.vertices[v1 + 9];
-            float v1ny = this.vertices[v1 + 10];
-            float v1nz = this.vertices[v1 + 11];
-            float v1r = this.vertices[v1 + 12];
-            float v1g = this.vertices[v1 + 13];
-            float v1b = this.vertices[v1 + 14];
-            float v1a = this.vertices[v1 + 15];
+            float v1cwinv = 1f / this.vertices[v1 + 3];
+            
+            float v1cx = ((this.vertices[v1 + 0] * v1cwinv) + 1.0f) * 0.5f * width;
+            float v1cy = ((this.vertices[v1 + 1] * v1cwinv) + 1.0f) * 0.5f * height;
+            float v1cz = ((this.vertices[v1 + 2] * v1cwinv) + 1.0f) * 0.5f;
+            float v1x = this.vertices[v1 + 4] * v1cwinv;
+            float v1y = this.vertices[v1 + 5] * v1cwinv;
+            float v1z = this.vertices[v1 + 6] * v1cwinv;
+            float v1u = this.vertices[v1 + 7] * v1cwinv;
+            float v1v = this.vertices[v1 + 8] * v1cwinv;
+            float v1nx = this.vertices[v1 + 9] * v1cwinv;
+            float v1ny = this.vertices[v1 + 10] * v1cwinv;
+            float v1nz = this.vertices[v1 + 11] * v1cwinv;
+            float v1r = this.vertices[v1 + 12] * v1cwinv;
+            float v1g = this.vertices[v1 + 13] * v1cwinv;
+            float v1b = this.vertices[v1 + 14] * v1cwinv;
+            float v1a = this.vertices[v1 + 15] * v1cwinv;
             //
 
             //2
-            float v2cx = this.vertices[v2 + 0] * width;
-            float v2cy = this.vertices[v2 + 1] * height;
-            float v2cz = this.vertices[v2 + 2];
-            float v2invw = this.vertices[v2 + 3];
-            float v2x = this.vertices[v2 + 4];
-            float v2y = this.vertices[v2 + 5];
-            float v2z = this.vertices[v2 + 6];
-            float v2u = this.vertices[v2 + 7];
-            float v2v = this.vertices[v2 + 8];
-            float v2nx = this.vertices[v2 + 9];
-            float v2ny = this.vertices[v2 + 10];
-            float v2nz = this.vertices[v2 + 11];
-            float v2r = this.vertices[v2 + 12];
-            float v2g = this.vertices[v2 + 13];
-            float v2b = this.vertices[v2 + 14];
-            float v2a = this.vertices[v2 + 15];
+            float v2cwinv = 1f / this.vertices[v2 + 3];
+            
+            float v2cx = ((this.vertices[v2 + 0] * v2cwinv) + 1.0f) * 0.5f * width;
+            float v2cy = ((this.vertices[v2 + 1] * v2cwinv) + 1.0f) * 0.5f * height;
+            float v2cz = ((this.vertices[v2 + 2] * v2cwinv) + 1.0f) * 0.5f;
+            float v2x = this.vertices[v2 + 4] * v2cwinv;
+            float v2y = this.vertices[v2 + 5] * v2cwinv;
+            float v2z = this.vertices[v2 + 6] * v2cwinv;
+            float v2u = this.vertices[v2 + 7] * v2cwinv;
+            float v2v = this.vertices[v2 + 8] * v2cwinv;
+            float v2nx = this.vertices[v2 + 9] * v2cwinv;
+            float v2ny = this.vertices[v2 + 10] * v2cwinv;
+            float v2nz = this.vertices[v2 + 11] * v2cwinv;
+            float v2r = this.vertices[v2 + 12] * v2cwinv;
+            float v2g = this.vertices[v2 + 13] * v2cwinv;
+            float v2b = this.vertices[v2 + 14] * v2cwinv;
+            float v2a = this.vertices[v2 + 15] * v2cwinv;
             //
             
             float inverse = 1f / ((v1cy - v2cy) * (v0cx - v2cx) + (v2cx - v1cx) * (v0cy - v2cy));
@@ -149,9 +152,9 @@ public class Rasterizer {
                         continue;
                     }
 
-                    float invw = (wv0 * v0invw) + (wv1 * v1invw) + (wv2 * v2invw);
+                    float invw = (wv0 * v0cwinv) + (wv1 * v1cwinv) + (wv2 * v2cwinv);
                     float w = 1f / invw;
-
+                    
                     float r = (wv0 * v0r) + (wv1 * v1r) + (wv2 * v2r);
                     float g = (wv0 * v0g) + (wv1 * v1g) + (wv2 * v2g);
                     float b = (wv0 * v0b) + (wv1 * v1b) + (wv2 * v2b);

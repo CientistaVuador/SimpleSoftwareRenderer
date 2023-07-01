@@ -42,18 +42,18 @@ import org.joml.Vector4f;
  */
 public class VertexProcessor {
 
-    //camera position / w, inverse w, world position / w, uv / w, world normal / w, color / w
-    public static final int PROCESSED_VERTEX_SIZE = 3 + 1 + 3 + 2 + 3 + 4;
-    
-    private static final Vector4f[] clippingEdges = new Vector4f[] {
+    //camera position, world position, uv, world normal, color
+    public static final int PROCESSED_VERTEX_SIZE = 4 + 3 + 2 + 3 + 4;
+
+    private static final Vector4f[] clippingEdges = new Vector4f[]{
         new Vector4f(-1, 0, 0, 1),
         new Vector4f(1, 0, 0, 1),
         new Vector4f(0, -1, 0, 1),
         new Vector4f(0, 1, 0, 1),
         new Vector4f(0, 0, -1, 1),
-        new Vector4f(0, 0, 1, 1),
+        new Vector4f(0, 0, 1, 1)
     };
-    
+
     private final float[] localVertices;
     private final Matrix4f projectionView = new Matrix4f();
     private final Matrix4f model = new Matrix4f();
@@ -91,12 +91,12 @@ public class VertexProcessor {
 
     public float[] process() {
         this.verticesIndex = 0;
-        
+
         Vector3f N = new Vector3f();
 
         Vector4f cacheA = new Vector4f();
         Vector4f cacheB = new Vector4f();
-        
+
         for (int i = 0; i < (this.localVertices.length / (VertexBuilder.LOCAL_VERTEX_SIZE * 3)); i++) {
             int v0 = i * (VertexBuilder.LOCAL_VERTEX_SIZE * 3);
             int v1 = v0 + VertexBuilder.LOCAL_VERTEX_SIZE;
@@ -206,14 +206,10 @@ public class VertexProcessor {
             float v2cyw = v2cy * v2cwinv;
             float v2czw = v2cz * v2cwinv;
             //
-            
+
             boolean clip0 = clip(v0cxw, v0cyw, v0czw);
             boolean clip1 = clip(v1cxw, v1cyw, v1czw);
             boolean clip2 = clip(v2cxw, v2cyw, v2czw);
-
-            if (clip0 && clip1 && clip2) {
-                continue;
-            }
 
             N.set(v0nx, v0ny, v0nz);
             this.normalModel.transform(N).normalize();
@@ -232,20 +228,120 @@ public class VertexProcessor {
             v2nx = N.x();
             v2ny = N.y();
             v2nz = N.z();
-            
+
             if (clip0 || clip1 || clip2) {
-                //todo
+                int verticesIndexStore = this.verticesIndex;
+                float[] verticesStore = this.vertices;
+
+                this.verticesIndex = 0;
+                this.vertices = new float[PROCESSED_VERTEX_SIZE * 36];
+
+                vertex(v0cx, v0cy, v0cz, v0cw, v0x, v0y, v0z, v0u, v0v, v0nx, v0ny, v0nz, v0r, v0g, v0b, v0a);
+                vertex(v1cx, v1cy, v1cz, v1cw, v1x, v1y, v1z, v1u, v1v, v1nx, v1ny, v1nz, v1r, v1g, v1b, v1a);
+                vertex(v2cx, v2cy, v2cz, v2cw, v2x, v2y, v2z, v2u, v2v, v2nx, v2ny, v2nz, v2r, v2g, v2b, v2a);
+
+                List<Integer> inputList = new ArrayList<>();
+                List<Integer> outputList = new ArrayList<>();
+
+                inputList.add(0);
+                inputList.add(1);
+                inputList.add(2);
+
+                for (Vector4f clippingEdge : VertexProcessor.clippingEdges) {
+                    if (inputList.size() < 3) {
+                        continue;
+                    }
+                    outputList.clear();
+                    int idxPrev = inputList.get(0);
+                    inputList.add(idxPrev);
+                    float dpPrev = (clippingEdge.x() * this.vertices[(idxPrev * PROCESSED_VERTEX_SIZE) + 0]) + (clippingEdge.y() * this.vertices[(idxPrev * PROCESSED_VERTEX_SIZE) + 1]) + (clippingEdge.z() * this.vertices[(idxPrev * PROCESSED_VERTEX_SIZE) + 2]) + (clippingEdge.w() * this.vertices[(idxPrev * PROCESSED_VERTEX_SIZE) + 3]);
+                    for (int j = 1; j < inputList.size(); ++j) {
+                        int idx = inputList.get(j);
+                        float dp = (clippingEdge.x() * this.vertices[(idx * PROCESSED_VERTEX_SIZE) + 0]) + (clippingEdge.y() * this.vertices[(idx * PROCESSED_VERTEX_SIZE) + 1]) + (clippingEdge.z() * this.vertices[(idx * PROCESSED_VERTEX_SIZE) + 2]) + (clippingEdge.w() * this.vertices[(idx * PROCESSED_VERTEX_SIZE) + 3]);
+
+                        if (dpPrev >= 0) {
+                            outputList.add(idxPrev);
+                        }
+
+                        if (Math.signum(dp) != Math.signum(dpPrev)) {
+                            float t = dp < 0 ? dpPrev / (dpPrev - dp) : -dpPrev / (dp - dpPrev);
+                            int v = interpolateVertex(idxPrev, idx, 1f - t, t);
+                            outputList.add(v);
+                        }
+
+                        idxPrev = idx;
+                        dpPrev = dp;
+                    }
+                    inputList.clear();
+                    inputList.addAll(outputList);
+                }
+
+                if (inputList.size() < 3) {
+                    this.vertices = verticesStore;
+                    this.verticesIndex = verticesIndexStore;
+                    continue;
+                }
+
+                List<Integer> resultIndices = new ArrayList<>();
+
+                resultIndices.add(inputList.get(0));
+                resultIndices.add(inputList.get(1));
+                resultIndices.add(inputList.get(2));
+                for (int j = 3; j < inputList.size(); j++) {
+                    resultIndices.add(inputList.get(0));
+                    resultIndices.add(inputList.get(j - 1));
+                    resultIndices.add(inputList.get(j));
+                }
+
+                float[] resultVertices = this.vertices;
+
+                this.vertices = verticesStore;
+                this.verticesIndex = verticesIndexStore;
+
+                for (int j = 0; j < (resultIndices.size() / 3); j++) {
+                    int cv0 = resultIndices.get((j * 3) + 0);
+                    int cv1 = resultIndices.get((j * 3) + 1);
+                    int cv2 = resultIndices.get((j * 3) + 2);
+
+                    float cv0cwinv = 1f / resultVertices[(cv0 * PROCESSED_VERTEX_SIZE) + 3];
+                    float cv0cxw = resultVertices[(cv0 * PROCESSED_VERTEX_SIZE) + 0] * cv0cwinv;
+                    float cv0cyw = resultVertices[(cv0 * PROCESSED_VERTEX_SIZE) + 1] * cv0cwinv;
+                    
+                    float cv1cwinv = 1f / resultVertices[(cv1 * PROCESSED_VERTEX_SIZE) + 3];
+                    float cv1cxw = resultVertices[(cv1 * PROCESSED_VERTEX_SIZE) + 0] * cv1cwinv;
+                    float cv1cyw = resultVertices[(cv1 * PROCESSED_VERTEX_SIZE) + 1] * cv1cwinv;
+                    
+                    float cv2cwinv = 1f / resultVertices[(cv2 * PROCESSED_VERTEX_SIZE) + 3];
+                    float cv2cxw = resultVertices[(cv2 * PROCESSED_VERTEX_SIZE) + 0] * cv2cwinv;
+                    float cv2cyw = resultVertices[(cv2 * PROCESSED_VERTEX_SIZE) + 1] * cv2cwinv;
+
+                    float ccw = (cv1cxw - cv0cxw) * (cv2cyw - cv0cyw) - (cv2cxw - cv0cxw) * (cv1cyw - cv0cyw);
+                    if (ccw <= 0f) {
+                        continue;
+                    }
+
+                    if ((this.verticesIndex + (PROCESSED_VERTEX_SIZE * 3)) > this.vertices.length) {
+                        this.vertices = Arrays.copyOf(this.vertices, (this.vertices.length * 2) + (PROCESSED_VERTEX_SIZE * 3));
+                    }
+
+                    System.arraycopy(resultVertices, cv0 * PROCESSED_VERTEX_SIZE, this.vertices, this.verticesIndex + (0 * PROCESSED_VERTEX_SIZE), PROCESSED_VERTEX_SIZE);
+                    System.arraycopy(resultVertices, cv1 * PROCESSED_VERTEX_SIZE, this.vertices, this.verticesIndex + (1 * PROCESSED_VERTEX_SIZE), PROCESSED_VERTEX_SIZE);
+                    System.arraycopy(resultVertices, cv2 * PROCESSED_VERTEX_SIZE, this.vertices, this.verticesIndex + (2 * PROCESSED_VERTEX_SIZE), PROCESSED_VERTEX_SIZE);
+
+                    this.verticesIndex += (PROCESSED_VERTEX_SIZE * 3);
+                }
+
                 continue;
             }
-            
+
             float ccw = (v1cxw - v0cxw) * (v2cyw - v0cyw) - (v2cxw - v0cxw) * (v1cyw - v0cyw);
             if (ccw <= 0f) {
                 continue;
             }
-            
-            vertex(v0cxw, v0cyw, v0czw, v0cwinv, v0x, v0y, v0z, v0u, v0v, v0nx, v0ny, v0nz, v0r, v0g, v0b, v0a);
-            vertex(v1cxw, v1cyw, v1czw, v1cwinv, v1x, v1y, v1z, v1u, v1v, v1nx, v1ny, v1nz, v1r, v1g, v1b, v1a);
-            vertex(v2cxw, v2cyw, v2czw, v2cwinv, v2x, v2y, v2z, v2u, v2v, v2nx, v2ny, v2nz, v2r, v2g, v2b, v2a);
+
+            vertex(v0cx, v0cy, v0cz, v0cw, v0x, v0y, v0z, v0u, v0v, v0nx, v0ny, v0nz, v0r, v0g, v0b, v0a);
+            vertex(v1cx, v1cy, v1cz, v1cw, v1x, v1y, v1z, v1u, v1v, v1nx, v1ny, v1nz, v1r, v1g, v1b, v1a);
+            vertex(v2cx, v2cy, v2cz, v2cw, v2x, v2y, v2z, v2u, v2v, v2nx, v2ny, v2nz, v2r, v2g, v2b, v2a);
         }
 
         if ((this.verticesIndex / PROCESSED_VERTEX_SIZE) % 3 != 0) {
@@ -259,38 +355,54 @@ public class VertexProcessor {
         return x > 1f || x < -1f || y > 1f || y < -1f || z > 1f || z < -1f;
     }
 
-    private void vertex(float cXW, float cYW, float cZW, float invcW, float wX, float wY, float wZ, float u, float v, float nX, float nY, float nZ, float r, float g, float b, float a) {
+    private int interpolateVertex(int vA, int vB, float w0, float w1) {
         if ((this.verticesIndex + PROCESSED_VERTEX_SIZE) > this.vertices.length) {
             this.vertices = Arrays.copyOf(this.vertices, (this.vertices.length * 2) + PROCESSED_VERTEX_SIZE);
         }
-        
+
+        float[] output = new float[PROCESSED_VERTEX_SIZE];
+        for (int i = 0; i < PROCESSED_VERTEX_SIZE; i++) {
+            float valueA = this.vertices[(vA * PROCESSED_VERTEX_SIZE) + i];
+            float valueB = this.vertices[(vB * PROCESSED_VERTEX_SIZE) + i];
+            output[i] = (valueA * w0) + (valueB * w1);
+        }
+        System.arraycopy(output, 0, this.vertices, this.verticesIndex, output.length);
+
+        this.verticesIndex += PROCESSED_VERTEX_SIZE;
+
+        return (this.verticesIndex / PROCESSED_VERTEX_SIZE) - 1;
+    }
+
+    private void vertex(float cX, float cY, float cZ, float cW, float wX, float wY, float wZ, float u, float v, float nX, float nY, float nZ, float r, float g, float b, float a) {
+        if ((this.verticesIndex + PROCESSED_VERTEX_SIZE) > this.vertices.length) {
+            this.vertices = Arrays.copyOf(this.vertices, (this.vertices.length * 2) + PROCESSED_VERTEX_SIZE);
+        }
+
         //camera position
-        this.vertices[this.verticesIndex + 0] = ((cXW + 1f) * 0.5f);
-        this.vertices[this.verticesIndex + 1] = ((cYW + 1f) * 0.5f);
-        this.vertices[this.verticesIndex + 2] = ((cZW + 1f) * 0.5f) * invcW;
-        
-        //inverse w
-        this.vertices[this.verticesIndex + 3] = invcW;
-        
+        this.vertices[this.verticesIndex + 0] = cX;
+        this.vertices[this.verticesIndex + 1] = cY;
+        this.vertices[this.verticesIndex + 2] = cZ;
+        this.vertices[this.verticesIndex + 3] = cW;
+
         //world position
-        this.vertices[this.verticesIndex + 4] = wX * invcW;
-        this.vertices[this.verticesIndex + 5] = wY * invcW;
-        this.vertices[this.verticesIndex + 6] = wZ * invcW;
+        this.vertices[this.verticesIndex + 4] = wX;
+        this.vertices[this.verticesIndex + 5] = wY;
+        this.vertices[this.verticesIndex + 6] = wZ;
 
         //uv
-        this.vertices[this.verticesIndex + 7] = u * invcW;
-        this.vertices[this.verticesIndex + 8] = v * invcW;
+        this.vertices[this.verticesIndex + 7] = u;
+        this.vertices[this.verticesIndex + 8] = v;
 
         //normal
-        this.vertices[this.verticesIndex + 9] = nX * invcW;
-        this.vertices[this.verticesIndex + 10] = nY * invcW;
-        this.vertices[this.verticesIndex + 11] = nZ * invcW;
+        this.vertices[this.verticesIndex + 9] = nX;
+        this.vertices[this.verticesIndex + 10] = nY;
+        this.vertices[this.verticesIndex + 11] = nZ;
 
         //color
-        this.vertices[this.verticesIndex + 12] = r * invcW;
-        this.vertices[this.verticesIndex + 13] = g * invcW;
-        this.vertices[this.verticesIndex + 14] = b * invcW;
-        this.vertices[this.verticesIndex + 15] = a * invcW;
+        this.vertices[this.verticesIndex + 12] = r;
+        this.vertices[this.verticesIndex + 13] = g;
+        this.vertices[this.verticesIndex + 14] = b;
+        this.vertices[this.verticesIndex + 15] = a;
 
         this.verticesIndex += PROCESSED_VERTEX_SIZE;
     }

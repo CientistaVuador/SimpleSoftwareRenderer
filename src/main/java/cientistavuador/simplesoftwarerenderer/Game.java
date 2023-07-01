@@ -36,7 +36,7 @@ public class Game {
     private final Font SMALL_FONT = new Font(Font.MONOSPACED, Font.PLAIN, 14);
     private boolean textEnabled = true;
     private final FreeCamera camera = new FreeCamera();
-    private final Surface surface = new Surface();
+    private final Surface surface = new Surface(320, 240);
     private final Texture texture = AWTInterop.toTexture(ImageResources.read("pointlight.png"));
     private BufferedImage outputImage;
     private final float[] vertices;
@@ -54,6 +54,11 @@ public class Game {
         int rightUpUv = stream.texture(1.0f - 0.0078125f, 1.0f - 0.0078125f);
         int leftUpUv = stream.texture(0.0f + 0.0078125f, 1.0f - 0.0078125f);
         
+        int leftDownBack = stream.position(-0.5f, -0.5f, -0.5f);
+        int rightDownBack = stream.position(0.5f, -0.5f, -0.5f);
+        int rightUpBack = stream.position(0.5f, 0.5f, -0.5f);
+        int leftUpBack = stream.position(-0.5f, 0.5f, -0.5f);
+        
         stream.vertex(leftDown, leftDownUv, 0, 0);
         stream.vertex(rightDown, rightDownUv, 0, 0);
         stream.vertex(rightUp, rightUpUv, 0, 0);
@@ -61,6 +66,14 @@ public class Game {
         stream.vertex(leftDown, leftDownUv, 0, 0);
         stream.vertex(rightUp, rightUpUv, 0, 0);
         stream.vertex(leftUp, leftUpUv, 0, 0);
+        
+        stream.vertex(leftDownBack, leftDownUv, 0, 0);
+        stream.vertex(rightDownBack, rightDownUv, 0, 0);
+        stream.vertex(rightUpBack, rightUpUv, 0, 0);
+        
+        stream.vertex(leftDownBack, leftDownUv, 0, 0);
+        stream.vertex(rightUpBack, rightUpUv, 0, 0);
+        stream.vertex(leftUpBack, leftUpUv, 0, 0);
         
         this.vertices = stream.vertices();
     }

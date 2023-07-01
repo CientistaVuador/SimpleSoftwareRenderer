@@ -39,7 +39,7 @@ import org.joml.Vector3fc;
  */
 public interface Camera {
 
-    float DEFAULT_FAR_PLANE = 1000f;
+    float DEFAULT_FAR_PLANE = 100f;
     float DEFAULT_NEAR_PLANE = 0.1f;
     Vector3fc DEFAULT_POSITION = new Vector3f(0, 0, 0);
     Vector3fc DEFAULT_WORLD_UP = new Vector3f(0, 1, 0);
