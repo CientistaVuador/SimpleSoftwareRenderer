@@ -26,8 +26,6 @@
  */
 package cientistavuador.simplesoftwarerenderer.render;
 
-import org.joml.Vector4f;
-
 /**
  *
  * @author Cien
@@ -35,10 +33,10 @@ import org.joml.Vector4f;
 public interface Texture {
     public int width();
     public int height();
-    public default void sample(float x, float y, Vector4f result) {
+    public default void sample(float x, float y, float[] result) {
         int pX = (int) (Math.floor(Math.abs(x) * width()) % width());
         int pY = (int) (Math.floor(Math.abs(y) * height()) % height());
         fetch(pX, pY, result);
     }
-    public void fetch(int x, int y, Vector4f result);
+    public void fetch(int x, int y, float[] result);
 }

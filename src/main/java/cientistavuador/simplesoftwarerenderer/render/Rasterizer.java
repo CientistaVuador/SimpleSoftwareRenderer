@@ -26,9 +26,7 @@
  */
 package cientistavuador.simplesoftwarerenderer.render;
 
-import org.joml.Vector3f;
 import org.joml.Vector3fc;
-import org.joml.Vector4f;
 
 /**
  *
@@ -77,8 +75,8 @@ public class Rasterizer {
     }
 
     public void render() {
-        Vector3f color = new Vector3f();
-        Vector4f textureColor = new Vector4f();
+        float[] color = new float[3];
+        float[] textureColor = new float[4];
         int width = this.surface.getWidth();
         int height = this.surface.getHeight();
         for (int i = 0; i < (this.vertices.length / (VertexProcessor.PROCESSED_VERTEX_SIZE * 3)); i++) {
@@ -208,10 +206,10 @@ public class Rasterizer {
                     if (this.texture != null) {
                         this.texture.sample(u, v, textureColor);
 
-                        cr *= textureColor.x();
-                        cg *= textureColor.y();
-                        cb *= textureColor.z();
-                        ca *= textureColor.w();
+                        cr *= textureColor[0];
+                        cg *= textureColor[1];
+                        cb *= textureColor[2];
+                        ca *= textureColor[3];
                     }
 
                     float r = lightAmbient.x() * cr;
@@ -227,11 +225,14 @@ public class Rasterizer {
 
                     this.surface.getColor(x, y, color);
 
-                    float outR = (r * a) + (color.x() * (1f - a));
-                    float outG = (g * a) + (color.y() * (1f - a));
-                    float outB = (b * a) + (color.z() * (1f - a));
-
-                    this.surface.setColor(x, y, color.set(outR, outG, outB));
+                    float outR = (r * a) + (color[0] * (1f - a));
+                    float outG = (g * a) + (color[1] * (1f - a));
+                    float outB = (b * a) + (color[2] * (1f - a));
+                    
+                    color[0] = outR;
+                    color[1] = outG;
+                    color[2] = outB;
+                    this.surface.setColor(x, y, color);
                 }
             }
         }

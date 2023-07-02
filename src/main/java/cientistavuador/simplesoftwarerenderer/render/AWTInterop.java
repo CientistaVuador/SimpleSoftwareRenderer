@@ -59,15 +59,13 @@ public class AWTInterop {
         }
 
         @Override
-        public void fetch(int x, int y, Vector4f result) {
+        public void fetch(int x, int y, float[] result) {
             int rgba = image.getRGB(x, (height() - 1) - y);
             
-            result.set(
-                    Pixels.decodeNormalized(rgba, 1),
-                    Pixels.decodeNormalized(rgba, 2),
-                    Pixels.decodeNormalized(rgba, 3),
-                    Pixels.decodeNormalized(rgba, 0)
-            );
+            result[0] = Pixels.decodeNormalized(rgba, 1);
+            result[1] = Pixels.decodeNormalized(rgba, 2);
+            result[2] = Pixels.decodeNormalized(rgba, 3);
+            result[3] = Pixels.decodeNormalized(rgba, 0);
         }
     }
     
@@ -85,24 +83,27 @@ public class AWTInterop {
         
         int width = t.width();
         int height = t.height();
-        BufferedImage data = new BufferedImage(width, height, BufferedImage.TYPE_INT_ARGB);
+        BufferedImage image = new BufferedImage(width, height, BufferedImage.TYPE_INT_ARGB);
         
-        Vector4f cache = new Vector4f();
+        float[] cache = new float[4];
+        int[] data = new int[width*height];
         
         for (int i = 0; i < width*height; i++) {
             int x = i % width;
             int y = i / width;
             
             t.fetch(x, (height - y) - 1, cache);
-            data.setRGB(x, y, Pixels.encodeNormalized(
-                    cache.w(),
-                    cache.x(),
-                    cache.y(),
-                    cache.z()
-            ));
+            data[i] = Pixels.encodeNormalized(
+                    cache[3],
+                    cache[0],
+                    cache[1],
+                    cache[2]
+            );
         }
         
-        return data;
+        image.setRGB(0, 0, width, height, data, 0, width);
+        
+        return image;
     }
     
     private AWTInterop() {

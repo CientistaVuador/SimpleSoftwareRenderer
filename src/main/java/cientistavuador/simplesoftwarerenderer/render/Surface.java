@@ -27,9 +27,6 @@
 package cientistavuador.simplesoftwarerenderer.render;
 
 import java.util.Arrays;
-import org.joml.Vector3f;
-import org.joml.Vector3fc;
-import org.joml.Vector4f;
 
 /**
  *
@@ -66,13 +63,11 @@ public class Surface {
             }
 
             @Override
-            public void fetch(int x, int y, Vector4f result) {
-                result.set(
-                        Surface.this.colorBuffer[((x + (y * width())) * 3) + 0],
-                        Surface.this.colorBuffer[((x + (y * width())) * 3) + 1],
-                        Surface.this.colorBuffer[((x + (y * width())) * 3) + 2],
-                        1f
-                );
+            public void fetch(int x, int y, float[] result) {
+                result[0] = Surface.this.colorBuffer[((x + (y * width())) * 3) + 0];
+                result[1] = Surface.this.colorBuffer[((x + (y * width())) * 3) + 1];
+                result[2] = Surface.this.colorBuffer[((x + (y * width())) * 3) + 2];
+                result[3] = 1f;
             }
         };
         this.depthBufferTexture = new Texture() {
@@ -87,9 +82,12 @@ public class Surface {
             }
 
             @Override
-            public void fetch(int x, int y, Vector4f result) {
+            public void fetch(int x, int y, float[] result) {
                 float depth = Surface.this.depthBuffer[x + (y * width())];
-                result.set(depth, depth, depth, 1f);
+                result[0] = depth;
+                result[1] = depth;
+                result[2] = depth;
+                result[3] = 1f;
             }
         };
     }
@@ -114,22 +112,20 @@ public class Surface {
         return depthBufferTexture;
     }
 
-    public void setColor(int x, int y, Vector3fc rgb) {
-        this.colorBuffer[((x + (y * getWidth())) * 3) + 0] = rgb.x();
-        this.colorBuffer[((x + (y * getWidth())) * 3) + 1] = rgb.y();
-        this.colorBuffer[((x + (y * getWidth())) * 3) + 2] = rgb.z();
+    public void setColor(int x, int y, float[] rgb) {
+        this.colorBuffer[((x + (y * getWidth())) * 3) + 0] = rgb[0];
+        this.colorBuffer[((x + (y * getWidth())) * 3) + 1] = rgb[1];
+        this.colorBuffer[((x + (y * getWidth())) * 3) + 2] = rgb[2];
     }
 
     public void setDepth(int x, int y, float depth) {
         this.depthBuffer[x + (y * getWidth())] = depth;
     }
 
-    public void getColor(int x, int y, Vector3f rgb) {
-        rgb.set(
-                this.colorBuffer[((x + (y * getWidth())) * 3) + 0],
-                this.colorBuffer[((x + (y * getWidth())) * 3) + 1],
-                this.colorBuffer[((x + (y * getWidth())) * 3) + 2]
-        );
+    public void getColor(int x, int y, float[] rgb) {
+        rgb[0] = this.colorBuffer[((x + (y * getWidth())) * 3) + 0];
+        rgb[1] = this.colorBuffer[((x + (y * getWidth())) * 3) + 1];
+        rgb[2] = this.colorBuffer[((x + (y * getWidth())) * 3) + 2];
     }
     
     public float getDepth(int x, int y) {

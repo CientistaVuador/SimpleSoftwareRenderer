@@ -9,9 +9,11 @@ import java.awt.Color;
 import java.awt.Graphics2D;
 import java.awt.event.KeyEvent;
 import cientistavuador.simplesoftwarerenderer.camera.FreeCamera;
+import cientistavuador.simplesoftwarerenderer.debug.DebugCounter;
 import cientistavuador.simplesoftwarerenderer.render.Renderer;
 import cientistavuador.simplesoftwarerenderer.resources.ImageResources;
 import java.awt.Font;
+import java.awt.image.BufferedImage;
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
@@ -38,6 +40,8 @@ public class Game {
     private final Renderer renderer = Renderer.create(400, 300);
     private float rotation = 0f;
 
+    private final DebugCounter counter = new DebugCounter();
+    
     private Game() {
         //load 3d model, texture and model matrix
         loadCottage();
@@ -48,6 +52,12 @@ public class Game {
                         .scale(0.25f)
                         .rotateY((float) Math.toRadians(45f))
         );
+        
+        counter.setTimerAction(() -> {
+            counter.print();
+            counter.clear();
+        });
+        counter.setTimerActionInterval(3000);
     }
 
     private void loadCottage() {
@@ -115,10 +125,15 @@ public class Game {
         g.setColor(Color.BLACK);
         g.fillRect(0, 0, 800, 600);
 
+        counter.markStart("Clear Buffers");
         this.renderer.clearBuffers();
+        counter.markEnd("Clear Buffers");
+        
         this.renderer.setProjectionView(new Matrix4f(this.camera.getProjectionView()));
-
+        
+        counter.markStart("Render House");
         int renderedVertices = this.renderer.render();
+        counter.markEnd("Render House");
 
         Main.NUMBER_OF_VERTICES += renderedVertices;
         Main.NUMBER_OF_DRAWCALLS++;
@@ -136,14 +151,22 @@ public class Game {
             this.rotation = 0f;
         }
 
+        counter.markStart("Render Tiny House");
         renderedVertices = this.renderer.render();
+        counter.markEnd("Render Tiny House");
 
         Main.NUMBER_OF_VERTICES += renderedVertices;
         Main.NUMBER_OF_DRAWCALLS++;
 
         this.renderer.setModel(otherModel);
         
-        g.drawImage(this.renderer.colorBufferToImage(), 0, 0, Main.WIDTH, Main.HEIGHT, null);
+        counter.markStart("Color Buffer to Image");
+        BufferedImage e = this.renderer.colorBufferToImage();
+        counter.markEnd("Color Buffer to Image");
+        
+        counter.markStart("Output");
+        g.drawImage(e, 0, 0, Main.WIDTH, Main.HEIGHT, null);
+        counter.markEnd("Output");
 
         if (this.textEnabled) {
             g.setFont(BIG_FONT);
