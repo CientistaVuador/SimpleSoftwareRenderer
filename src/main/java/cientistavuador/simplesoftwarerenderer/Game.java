@@ -118,14 +118,19 @@ public class Game {
         surface.clearColor(0.2f, 0.4f, 0.6f);
         surface.clearDepth(1f);
 
-        VertexProcessor processor = new VertexProcessor(this.vertices, new Matrix4f(this.camera.getProjectionView()), null);
+        Matrix4f model = new Matrix4f()
+                .translate(0f, -2f, -7f)
+                .scale(0.25f)
+                .rotateY((float) Math.toRadians(45f))
+                ;
+        VertexProcessor processor = new VertexProcessor(this.vertices, new Matrix4f(this.camera.getProjectionView()), model);
         Rasterizer rasterizer = new Rasterizer(surface, this.texture, processor.process(),
                 new Vector3f(-1f, -1f, -1f).normalize(),
-                new Vector3f(0.7f, 0.7f, 0.7f),
-                new Vector3f(0.3f, 0.3f, 0.3f)
+                new Vector3f(0.8f, 0.8f, 0.8f),
+                new Vector3f(0.2f + (0.2f * 0.05f), 0.2f + (0.4f * 0.05f), 0.2f + (0.6f * 0.05f))
         );
         rasterizer.render();
-
+        
         outputImage = AWTInterop.fromTexture(surface.getColorBufferTexture());
         g.drawImage(outputImage, 0, 0, Main.WIDTH, Main.HEIGHT, null);
 

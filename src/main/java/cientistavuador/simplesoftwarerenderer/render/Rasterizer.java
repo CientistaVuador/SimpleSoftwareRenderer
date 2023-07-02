@@ -91,7 +91,7 @@ public class Rasterizer {
             
             float v0cx = ((this.vertices[v0 + 0] * v0cwinv) + 1.0f) * 0.5f * width;
             float v0cy = ((this.vertices[v0 + 1] * v0cwinv) + 1.0f) * 0.5f * height;
-            float v0cz = ((this.vertices[v0 + 2] * v0cwinv) + 1.0f) * 0.5f * v0cwinv;
+            float v0cz = ((this.vertices[v0 + 2] * v0cwinv) + 1.0f) * 0.5f;
             float v0x = this.vertices[v0 + 4] * v0cwinv;
             float v0y = this.vertices[v0 + 5] * v0cwinv;
             float v0z = this.vertices[v0 + 6] * v0cwinv;
@@ -111,7 +111,7 @@ public class Rasterizer {
             
             float v1cx = ((this.vertices[v1 + 0] * v1cwinv) + 1.0f) * 0.5f * width;
             float v1cy = ((this.vertices[v1 + 1] * v1cwinv) + 1.0f) * 0.5f * height;
-            float v1cz = ((this.vertices[v1 + 2] * v1cwinv) + 1.0f) * 0.5f * v1cwinv;
+            float v1cz = ((this.vertices[v1 + 2] * v1cwinv) + 1.0f) * 0.5f;
             float v1x = this.vertices[v1 + 4] * v1cwinv;
             float v1y = this.vertices[v1 + 5] * v1cwinv;
             float v1z = this.vertices[v1 + 6] * v1cwinv;
@@ -131,7 +131,7 @@ public class Rasterizer {
             
             float v2cx = ((this.vertices[v2 + 0] * v2cwinv) + 1.0f) * 0.5f * width;
             float v2cy = ((this.vertices[v2 + 1] * v2cwinv) + 1.0f) * 0.5f * height;
-            float v2cz = ((this.vertices[v2 + 2] * v2cwinv) + 1.0f) * 0.5f * v2cwinv;
+            float v2cz = ((this.vertices[v2 + 2] * v2cwinv) + 1.0f) * 0.5f;
             float v2x = this.vertices[v2 + 4] * v2cwinv;
             float v2y = this.vertices[v2 + 5] * v2cwinv;
             float v2z = this.vertices[v2 + 6] * v2cwinv;
@@ -177,7 +177,7 @@ public class Rasterizer {
                     float invw = (wv0 * v0cwinv) + (wv1 * v1cwinv) + (wv2 * v2cwinv);
                     float w = 1f / invw;
                     
-                    float depth = ((wv0 * v0cz) + (wv1 * v1cz) + (wv2 * v2cz)) * w;
+                    float depth = (wv0 * v0cz) + (wv1 * v1cz) + (wv2 * v2cz);
                     float currentDepth = this.surface.getDepth(x, y);
                     if (depth >= currentDepth) {
                         continue;

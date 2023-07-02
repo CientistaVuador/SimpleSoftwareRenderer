@@ -94,8 +94,7 @@ public class VertexProcessor {
 
         Vector3f N = new Vector3f();
 
-        Vector4f cacheA = new Vector4f();
-        Vector4f cacheB = new Vector4f();
+        Vector4f cache = new Vector4f();
 
         for (int i = 0; i < (this.localVertices.length / (VertexBuilder.LOCAL_VERTEX_SIZE * 3)); i++) {
             int v0 = i * (VertexBuilder.LOCAL_VERTEX_SIZE * 3);
@@ -115,20 +114,18 @@ public class VertexProcessor {
             float v0g = this.localVertices[v0 + 9];
             float v0b = this.localVertices[v0 + 10];
             float v0a = this.localVertices[v0 + 11];
+            
+            cache.set(v0x, v0y, v0z, 1f);
+            this.model.transform(cache);
+            v0x = cache.x();
+            v0y = cache.y();
+            v0z = cache.z();
+            this.projectionView.transform(cache);
 
-            cacheB.set(v0x, v0y, v0z, 1f);
-            this.model.transformProject(cacheB);
-            v0x = cacheB.x();
-            v0y = cacheB.y();
-            v0z = cacheB.z();
-
-            cacheA.set(v0x, v0y, v0z, 1f);
-            this.projectionView.transform(cacheA);
-
-            float v0cx = cacheA.x();
-            float v0cy = cacheA.y();
-            float v0cz = cacheA.z();
-            float v0cw = cacheA.w();
+            float v0cx = cache.x();
+            float v0cy = cache.y();
+            float v0cz = cache.z();
+            float v0cw = cache.w();
 
             float v0cwinv = 1f / v0cw;
 
@@ -150,20 +147,18 @@ public class VertexProcessor {
             float v1g = this.localVertices[v1 + 9];
             float v1b = this.localVertices[v1 + 10];
             float v1a = this.localVertices[v1 + 11];
+            
+            cache.set(v1x, v1y, v1z, 1f);
+            this.model.transform(cache);
+            v1x = cache.x();
+            v1y = cache.y();
+            v1z = cache.z();
+            this.projectionView.transform(cache);
 
-            cacheB.set(v1x, v1y, v1z, 1f);
-            this.model.transformProject(cacheB);
-            v1x = cacheB.x();
-            v1y = cacheB.y();
-            v1z = cacheB.z();
-
-            cacheA.set(v1x, v1y, v1z, 1f);
-            this.projectionView.transform(this.model.transform(cacheA));
-
-            float v1cx = cacheA.x();
-            float v1cy = cacheA.y();
-            float v1cz = cacheA.z();
-            float v1cw = cacheA.w();
+            float v1cx = cache.x();
+            float v1cy = cache.y();
+            float v1cz = cache.z();
+            float v1cw = cache.w();
 
             float v1cwinv = 1f / v1cw;
 
@@ -185,20 +180,18 @@ public class VertexProcessor {
             float v2g = this.localVertices[v2 + 9];
             float v2b = this.localVertices[v2 + 10];
             float v2a = this.localVertices[v2 + 11];
+            
+            cache.set(v2x, v2y, v2z, 1f);
+            this.model.transform(cache);
+            v2x = cache.x();
+            v2y = cache.y();
+            v2z = cache.z();
+            this.projectionView.transform(cache);
 
-            cacheB.set(v2x, v2y, v2z, 1f);
-            this.model.transformProject(cacheB);
-            v2x = cacheB.x();
-            v2y = cacheB.y();
-            v2z = cacheB.z();
-
-            cacheA.set(v2x, v2y, v2z, 1f);
-            this.projectionView.transform(this.model.transform(cacheA));
-
-            float v2cx = cacheA.x();
-            float v2cy = cacheA.y();
-            float v2cz = cacheA.z();
-            float v2cw = cacheA.w();
+            float v2cx = cache.x();
+            float v2cy = cache.y();
+            float v2cz = cache.z();
+            float v2cw = cache.w();
 
             float v2cwinv = 1f / v2cw;
 
@@ -230,10 +223,6 @@ public class VertexProcessor {
             v2nz = N.z();
 
             if (clip0 || clip1 || clip2) {
-                if (v2nx == v2nx) {
-                    continue;
-                }
-                
                 //https://read.cash/@Metalhead33/software-renderer-4-complex-shapes-z-buffers-alpha-blending-perspective-correction-cameras-c1ebfd00
                 
                 int verticesIndexStore = this.verticesIndex;
