@@ -27,6 +27,7 @@
 package cientistavuador.simplesoftwarerenderer.render;
 
 import org.joml.Vector3f;
+import org.joml.Vector3fc;
 import org.joml.Vector4f;
 
 /**
@@ -38,13 +39,31 @@ public class Rasterizer {
     private final Surface surface;
     private final Texture texture;
     private final float[] vertices;
+    private final Vector3fc lightDirection;
+    private final Vector3fc lightDiffuse;
+    private final Vector3fc lightAmbient;
 
-    public Rasterizer(Surface surface, Texture texture, float[] vertices) {
+    public Rasterizer(Surface surface, Texture texture, float[] vertices, Vector3fc lightDirection, Vector3fc lightDiffuse, Vector3fc lightAmbient) {
         this.surface = surface;
         this.texture = texture;
         this.vertices = vertices;
+        this.lightDirection = lightDirection;
+        this.lightDiffuse = lightDiffuse;
+        this.lightAmbient = lightAmbient;
     }
 
+    public Vector3fc getLightDirection() {
+        return lightDirection;
+    }
+
+    public Vector3fc getLightDiffuse() {
+        return lightDiffuse;
+    }
+
+    public Vector3fc getLightAmbient() {
+        return lightAmbient;
+    }
+    
     public Surface getSurface() {
         return surface;
     }
@@ -72,7 +91,7 @@ public class Rasterizer {
             
             float v0cx = ((this.vertices[v0 + 0] * v0cwinv) + 1.0f) * 0.5f * width;
             float v0cy = ((this.vertices[v0 + 1] * v0cwinv) + 1.0f) * 0.5f * height;
-            float v0cz = ((this.vertices[v0 + 2] * v0cwinv) + 1.0f) * 0.5f;
+            float v0cz = ((this.vertices[v0 + 2] * v0cwinv) + 1.0f) * 0.5f * v0cwinv;
             float v0x = this.vertices[v0 + 4] * v0cwinv;
             float v0y = this.vertices[v0 + 5] * v0cwinv;
             float v0z = this.vertices[v0 + 6] * v0cwinv;
@@ -92,7 +111,7 @@ public class Rasterizer {
             
             float v1cx = ((this.vertices[v1 + 0] * v1cwinv) + 1.0f) * 0.5f * width;
             float v1cy = ((this.vertices[v1 + 1] * v1cwinv) + 1.0f) * 0.5f * height;
-            float v1cz = ((this.vertices[v1 + 2] * v1cwinv) + 1.0f) * 0.5f;
+            float v1cz = ((this.vertices[v1 + 2] * v1cwinv) + 1.0f) * 0.5f * v1cwinv;
             float v1x = this.vertices[v1 + 4] * v1cwinv;
             float v1y = this.vertices[v1 + 5] * v1cwinv;
             float v1z = this.vertices[v1 + 6] * v1cwinv;
@@ -112,7 +131,7 @@ public class Rasterizer {
             
             float v2cx = ((this.vertices[v2 + 0] * v2cwinv) + 1.0f) * 0.5f * width;
             float v2cy = ((this.vertices[v2 + 1] * v2cwinv) + 1.0f) * 0.5f * height;
-            float v2cz = ((this.vertices[v2 + 2] * v2cwinv) + 1.0f) * 0.5f;
+            float v2cz = ((this.vertices[v2 + 2] * v2cwinv) + 1.0f) * 0.5f * v2cwinv;
             float v2x = this.vertices[v2 + 4] * v2cwinv;
             float v2y = this.vertices[v2 + 5] * v2cwinv;
             float v2z = this.vertices[v2 + 6] * v2cwinv;
@@ -144,6 +163,9 @@ public class Rasterizer {
                 for (int y = minYP; y <= maxYP; y++) {
                     float xPos = x + 0.5f;
                     float yPos = y + 0.5f;
+                    if (xPos < 0f || xPos > width || yPos < 0 || yPos > height) {
+                        continue;
+                    }
                     
                     float wv0 = ((v1cy - v2cy) * (xPos - v2cx) + (v2cx - v1cx) * (yPos - v2cy)) * inverse;
                     float wv1 = ((v2cy - v0cy) * (xPos - v2cx) + (v0cx - v2cx) * (yPos - v2cy)) * inverse;
@@ -151,33 +173,57 @@ public class Rasterizer {
                     if (wv0 < 0f || wv1 < 0f || wv2 < 0f) {
                         continue;
                     }
-
+                    
                     float invw = (wv0 * v0cwinv) + (wv1 * v1cwinv) + (wv2 * v2cwinv);
                     float w = 1f / invw;
                     
-                    float r = (wv0 * v0r) + (wv1 * v1r) + (wv2 * v2r);
-                    float g = (wv0 * v0g) + (wv1 * v1g) + (wv2 * v2g);
-                    float b = (wv0 * v0b) + (wv1 * v1b) + (wv2 * v2b);
-                    float a = (wv0 * v0a) + (wv1 * v1a) + (wv2 * v2a);
-                    r *= w;
-                    g *= w;
-                    b *= w;
-                    a *= w;
-
-                    float u = (wv0 * v0u) + (wv1 * v1u) + (wv2 * v2u);
-                    float v = (wv0 * v0v) + (wv1 * v1v) + (wv2 * v2v);
-                    u *= w;
-                    v *= w;
+                    float depth = ((wv0 * v0cz) + (wv1 * v1cz) + (wv2 * v2cz)) * w;
+                    float currentDepth = this.surface.getDepth(x, y);
+                    if (depth >= currentDepth) {
+                        continue;
+                    }
+                    this.surface.setDepth(x, y, depth);
+                    
+                    float worldx = ((wv0 * v0x) + (wv1 * v1x) + (wv2 * v2x)) * w;
+                    float worldy = ((wv0 * v0y) + (wv1 * v1y) + (wv2 * v2y)) * w;
+                    float worldz = ((wv0 * v0z) + (wv1 * v1z) + (wv2 * v2z)) * w;
+                    
+                    float u = ((wv0 * v0u) + (wv1 * v1u) + (wv2 * v2u)) * w;
+                    float v = ((wv0 * v0v) + (wv1 * v1v) + (wv2 * v2v)) * w;
+                    
+                    float nx = ((wv0 * v0nx) + (wv1 * v1nx) + (wv2 * v2nx)) * w;
+                    float ny = ((wv0 * v0ny) + (wv1 * v1ny) + (wv2 * v2ny)) * w;
+                    float nz = ((wv0 * v0nz) + (wv1 * v1nz) + (wv2 * v2nz)) * w;
+                    float lengthinv = (float) (1.0 / Math.sqrt((nx*nx) + (ny*ny) + (nz*nz)));
+                    nx *= lengthinv;
+                    ny *= lengthinv;
+                    nz *= lengthinv;
+                    
+                    float cr = ((wv0 * v0r) + (wv1 * v1r) + (wv2 * v2r)) * w;
+                    float cg = ((wv0 * v0g) + (wv1 * v1g) + (wv2 * v2g)) * w;
+                    float cb = ((wv0 * v0b) + (wv1 * v1b) + (wv2 * v2b)) * w;
+                    float ca = ((wv0 * v0a) + (wv1 * v1a) + (wv2 * v2a)) * w;
 
                     if (this.texture != null) {
                         this.texture.sample(u, v, textureColor);
 
-                        r *= textureColor.x();
-                        g *= textureColor.y();
-                        b *= textureColor.z();
-                        a *= textureColor.w();
+                        cr *= textureColor.x();
+                        cg *= textureColor.y();
+                        cb *= textureColor.z();
+                        ca *= textureColor.w();
                     }
-
+                    
+                    float r = lightAmbient.x() * cr;
+                    float g = lightAmbient.y() * cg;
+                    float b = lightAmbient.z() * cb;
+                    float a = ca;
+                    
+                    float diffuse = Math.max((nx * -lightDirection.x()) + (ny * -lightDirection.y()) + (nz * -lightDirection.z()), 0f);
+                    
+                    r += lightDiffuse.x() * diffuse * cr;
+                    g += lightDiffuse.y() * diffuse * cg;
+                    b += lightDiffuse.z() * diffuse * cb;
+                    
                     this.surface.getColor(x, y, color);
 
                     float outR = (r * a) + (color.x() * (1f - a));

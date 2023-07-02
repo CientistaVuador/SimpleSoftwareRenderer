@@ -24,7 +24,7 @@
  *
  * For more information, please refer to <https://unlicense.org>
  */
-package cientistavuador.simplesoftwarerenderer.resources.image;
+package cientistavuador.simplesoftwarerenderer.resources;
 
 import java.awt.image.BufferedImage;
 import java.io.IOException;

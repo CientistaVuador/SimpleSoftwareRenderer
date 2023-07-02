@@ -230,6 +230,12 @@ public class VertexProcessor {
             v2nz = N.z();
 
             if (clip0 || clip1 || clip2) {
+                if (v2nx == v2nx) {
+                    continue;
+                }
+                
+                //https://read.cash/@Metalhead33/software-renderer-4-complex-shapes-z-buffers-alpha-blending-perspective-correction-cameras-c1ebfd00
+                
                 int verticesIndexStore = this.verticesIndex;
                 float[] verticesStore = this.vertices;
 
@@ -253,6 +259,8 @@ public class VertexProcessor {
                     }
                     outputList.clear();
                     int idxPrev = inputList.get(0);
+                    //inputList, not output
+                    //outputList.add(idxPrev);
                     inputList.add(idxPrev);
                     float dpPrev = (clippingEdge.x() * this.vertices[(idxPrev * PROCESSED_VERTEX_SIZE) + 0]) + (clippingEdge.y() * this.vertices[(idxPrev * PROCESSED_VERTEX_SIZE) + 1]) + (clippingEdge.z() * this.vertices[(idxPrev * PROCESSED_VERTEX_SIZE) + 2]) + (clippingEdge.w() * this.vertices[(idxPrev * PROCESSED_VERTEX_SIZE) + 3]);
                     for (int j = 1; j < inputList.size(); ++j) {
