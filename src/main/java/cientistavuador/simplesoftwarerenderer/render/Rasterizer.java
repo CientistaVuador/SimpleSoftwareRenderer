@@ -63,7 +63,7 @@ public class Rasterizer {
     public Vector3fc getLightAmbient() {
         return lightAmbient;
     }
-    
+
     public Surface getSurface() {
         return surface;
     }
@@ -79,8 +79,8 @@ public class Rasterizer {
     public void render() {
         Vector3f color = new Vector3f();
         Vector4f textureColor = new Vector4f();
-        float width = this.surface.getWidth();
-        float height = this.surface.getHeight();
+        int width = this.surface.getWidth();
+        int height = this.surface.getHeight();
         for (int i = 0; i < (this.vertices.length / (VertexProcessor.PROCESSED_VERTEX_SIZE * 3)); i++) {
             int v0 = i * (VertexProcessor.PROCESSED_VERTEX_SIZE * 3);
             int v1 = v0 + VertexProcessor.PROCESSED_VERTEX_SIZE;
@@ -88,7 +88,7 @@ public class Rasterizer {
 
             //0
             float v0cwinv = 1f / this.vertices[v0 + 3];
-            
+
             float v0cx = ((this.vertices[v0 + 0] * v0cwinv) + 1.0f) * 0.5f * width;
             float v0cy = ((this.vertices[v0 + 1] * v0cwinv) + 1.0f) * 0.5f * height;
             float v0cz = ((this.vertices[v0 + 2] * v0cwinv) + 1.0f) * 0.5f;
@@ -108,7 +108,7 @@ public class Rasterizer {
 
             //1
             float v1cwinv = 1f / this.vertices[v1 + 3];
-            
+
             float v1cx = ((this.vertices[v1 + 0] * v1cwinv) + 1.0f) * 0.5f * width;
             float v1cy = ((this.vertices[v1 + 1] * v1cwinv) + 1.0f) * 0.5f * height;
             float v1cz = ((this.vertices[v1 + 2] * v1cwinv) + 1.0f) * 0.5f;
@@ -128,7 +128,7 @@ public class Rasterizer {
 
             //2
             float v2cwinv = 1f / this.vertices[v2 + 3];
-            
+
             float v2cx = ((this.vertices[v2 + 0] * v2cwinv) + 1.0f) * 0.5f * width;
             float v2cy = ((this.vertices[v2 + 1] * v2cwinv) + 1.0f) * 0.5f * height;
             float v2cz = ((this.vertices[v2 + 2] * v2cwinv) + 1.0f) * 0.5f;
@@ -145,9 +145,9 @@ public class Rasterizer {
             float v2b = this.vertices[v2 + 14] * v2cwinv;
             float v2a = this.vertices[v2 + 15] * v2cwinv;
             //
-            
+
             float inverse = 1f / ((v1cy - v2cy) * (v0cx - v2cx) + (v2cx - v1cx) * (v0cy - v2cy));
-            
+
             float maxX = Math.max(Math.max(v0cx, v1cx), v2cx);
             float maxY = Math.max(Math.max(v0cy, v1cy), v2cy);
 
@@ -158,47 +158,48 @@ public class Rasterizer {
             int maxYP = Math.round(maxY);
             int minXP = Math.round(minX);
             int minYP = Math.round(minY);
-            
+
             for (int x = minXP; x <= maxXP; x++) {
                 for (int y = minYP; y <= maxYP; y++) {
-                    float xPos = x + 0.5f;
-                    float yPos = y + 0.5f;
-                    if (xPos < 0f || xPos > width || yPos < 0 || yPos > height) {
+                    if (x < 0 || x >= width || y < 0 || y >= height) {
                         continue;
                     }
-                    
+
+                    float xPos = x + 0.5f;
+                    float yPos = y + 0.5f;
+
                     float wv0 = ((v1cy - v2cy) * (xPos - v2cx) + (v2cx - v1cx) * (yPos - v2cy)) * inverse;
                     float wv1 = ((v2cy - v0cy) * (xPos - v2cx) + (v0cx - v2cx) * (yPos - v2cy)) * inverse;
                     float wv2 = 1 - wv0 - wv1;
                     if (wv0 < 0f || wv1 < 0f || wv2 < 0f) {
                         continue;
                     }
-                    
+
                     float invw = (wv0 * v0cwinv) + (wv1 * v1cwinv) + (wv2 * v2cwinv);
                     float w = 1f / invw;
-                    
+
                     float depth = (wv0 * v0cz) + (wv1 * v1cz) + (wv2 * v2cz);
                     float currentDepth = this.surface.getDepth(x, y);
-                    if (depth >= currentDepth) {
+                    if (depth > currentDepth) {
                         continue;
                     }
                     this.surface.setDepth(x, y, depth);
-                    
+
                     float worldx = ((wv0 * v0x) + (wv1 * v1x) + (wv2 * v2x)) * w;
                     float worldy = ((wv0 * v0y) + (wv1 * v1y) + (wv2 * v2y)) * w;
                     float worldz = ((wv0 * v0z) + (wv1 * v1z) + (wv2 * v2z)) * w;
-                    
+
                     float u = ((wv0 * v0u) + (wv1 * v1u) + (wv2 * v2u)) * w;
                     float v = ((wv0 * v0v) + (wv1 * v1v) + (wv2 * v2v)) * w;
-                    
+
                     float nx = ((wv0 * v0nx) + (wv1 * v1nx) + (wv2 * v2nx)) * w;
                     float ny = ((wv0 * v0ny) + (wv1 * v1ny) + (wv2 * v2ny)) * w;
                     float nz = ((wv0 * v0nz) + (wv1 * v1nz) + (wv2 * v2nz)) * w;
-                    float lengthinv = (float) (1.0 / Math.sqrt((nx*nx) + (ny*ny) + (nz*nz)));
+                    float lengthinv = (float) (1.0 / Math.sqrt((nx * nx) + (ny * ny) + (nz * nz)));
                     nx *= lengthinv;
                     ny *= lengthinv;
                     nz *= lengthinv;
-                    
+
                     float cr = ((wv0 * v0r) + (wv1 * v1r) + (wv2 * v2r)) * w;
                     float cg = ((wv0 * v0g) + (wv1 * v1g) + (wv2 * v2g)) * w;
                     float cb = ((wv0 * v0b) + (wv1 * v1b) + (wv2 * v2b)) * w;
@@ -212,18 +213,18 @@ public class Rasterizer {
                         cb *= textureColor.z();
                         ca *= textureColor.w();
                     }
-                    
+
                     float r = lightAmbient.x() * cr;
                     float g = lightAmbient.y() * cg;
                     float b = lightAmbient.z() * cb;
                     float a = ca;
-                    
+
                     float diffuse = Math.max((nx * -lightDirection.x()) + (ny * -lightDirection.y()) + (nz * -lightDirection.z()), 0f);
-                    
+
                     r += lightDiffuse.x() * diffuse * cr;
                     g += lightDiffuse.y() * diffuse * cg;
                     b += lightDiffuse.z() * diffuse * cb;
-                    
+
                     this.surface.getColor(x, y, color);
 
                     float outR = (r * a) + (color.x() * (1f - a));
@@ -233,7 +234,6 @@ public class Rasterizer {
                     this.surface.setColor(x, y, color.set(outR, outG, outB));
                 }
             }
-
         }
     }
 

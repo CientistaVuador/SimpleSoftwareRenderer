@@ -9,21 +9,14 @@ import java.awt.Color;
 import java.awt.Graphics2D;
 import java.awt.event.KeyEvent;
 import cientistavuador.simplesoftwarerenderer.camera.FreeCamera;
-import cientistavuador.simplesoftwarerenderer.render.AWTInterop;
-import cientistavuador.simplesoftwarerenderer.render.Rasterizer;
-import cientistavuador.simplesoftwarerenderer.render.Surface;
-import cientistavuador.simplesoftwarerenderer.render.Texture;
-import cientistavuador.simplesoftwarerenderer.render.VertexBuilder;
-import cientistavuador.simplesoftwarerenderer.render.VertexProcessor;
+import cientistavuador.simplesoftwarerenderer.render.Renderer;
 import cientistavuador.simplesoftwarerenderer.resources.ImageResources;
 import java.awt.Font;
-import java.awt.image.BufferedImage;
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.nio.charset.StandardCharsets;
 import org.joml.Matrix4f;
-import org.joml.Vector3f;
 
 /**
  *
@@ -41,16 +34,23 @@ public class Game {
     private final Font SMALL_FONT = new Font(Font.MONOSPACED, Font.PLAIN, 14);
     private boolean textEnabled = true;
     private final FreeCamera camera = new FreeCamera();
-    private final Surface surface = new Surface(320, 240);
-    private final Texture texture = AWTInterop.toTexture(ImageResources.read("cottage_diffuse.png"));
-    private BufferedImage outputImage;
-    private final float[] vertices;
+
+    private final Renderer renderer = Renderer.create(400, 300);
+    private float rotation = 0f;
 
     private Game() {
-        this.vertices = loadCottage();
+        //load 3d model, texture and model matrix
+        loadCottage();
+        this.renderer.setTexture(this.renderer.imageToTexture(ImageResources.read("cottage_diffuse.png")));
+        this.renderer.setModel(
+                new Matrix4f()
+                        .translate(0f, -2f, -7f)
+                        .scale(0.25f)
+                        .rotateY((float) Math.toRadians(45f))
+        );
     }
 
-    private float[] loadCottage() {
+    private void loadCottage() {
         try (BufferedReader reader
                 = new BufferedReader(
                         new InputStreamReader(
@@ -58,33 +58,33 @@ public class Game {
                                 StandardCharsets.UTF_8
                         )
                 )) {
-            
-            VertexBuilder builder = new VertexBuilder();
-            
+
+            this.renderer.beginVertices();
+
             String s;
             while ((s = reader.readLine()) != null) {
                 if (s.startsWith("#") || s.isBlank()) {
                     continue;
                 }
                 String[] split = s.split(" ");
-                
+
                 switch (split[0]) {
                     case "v" -> {
                         float x = Float.parseFloat(split[1]);
                         float y = Float.parseFloat(split[2]);
                         float z = Float.parseFloat(split[3]);
-                        builder.position(x, y, z);
+                        this.renderer.position(x, y, z);
                     }
                     case "vt" -> {
                         float u = Float.parseFloat(split[1]);
                         float v = Float.parseFloat(split[2]);
-                        builder.texture(u, v);
+                        this.renderer.texture(u, v);
                     }
                     case "vn" -> {
                         float nx = Float.parseFloat(split[1]);
                         float ny = Float.parseFloat(split[2]);
                         float nz = Float.parseFloat(split[3]);
-                        builder.normal(nx, ny, nz);
+                        this.renderer.normal(nx, ny, nz);
                     }
                     case "f" -> {
                         for (int i = 0; i < 3; i++) {
@@ -92,14 +92,14 @@ public class Game {
                             int position = Integer.parseInt(faceSplit[0]);
                             int uv = Integer.parseInt(faceSplit[1]);
                             int normal = Integer.parseInt(faceSplit[2]);
-                            builder.vertex(position, uv, normal, 0);
+                            this.renderer.vertex(position, uv, normal, 0);
                         }
                     }
                 }
-                
+
             }
-            
-            return builder.vertices();
+
+            this.renderer.finishVerticesAndSet();
         } catch (IOException ex) {
             throw new RuntimeException(ex);
         }
@@ -115,24 +115,35 @@ public class Game {
         g.setColor(Color.BLACK);
         g.fillRect(0, 0, 800, 600);
 
-        surface.clearColor(0.2f, 0.4f, 0.6f);
-        surface.clearDepth(1f);
+        this.renderer.clearBuffers();
+        this.renderer.setProjectionView(new Matrix4f(this.camera.getProjectionView()));
 
-        Matrix4f model = new Matrix4f()
-                .translate(0f, -2f, -7f)
-                .scale(0.25f)
-                .rotateY((float) Math.toRadians(45f))
-                ;
-        VertexProcessor processor = new VertexProcessor(this.vertices, new Matrix4f(this.camera.getProjectionView()), model);
-        Rasterizer rasterizer = new Rasterizer(surface, this.texture, processor.process(),
-                new Vector3f(-1f, -1f, -1f).normalize(),
-                new Vector3f(0.8f, 0.8f, 0.8f),
-                new Vector3f(0.2f + (0.2f * 0.05f), 0.2f + (0.4f * 0.05f), 0.2f + (0.6f * 0.05f))
+        int renderedVertices = this.renderer.render();
+
+        Main.NUMBER_OF_VERTICES += renderedVertices;
+        Main.NUMBER_OF_DRAWCALLS++;
+
+        Matrix4f otherModel = this.renderer.getModel();
+
+        this.renderer.setModel(
+                new Matrix4f()
+                        .translate(-6f, -2f, -1f)
+                        .scale(0.05f)
+                        .rotateY((float) Math.toRadians(this.rotation))
         );
-        rasterizer.render();
+        this.rotation += Main.TPF * 12f;
+        if (this.rotation > 360f) {
+            this.rotation = 0f;
+        }
+
+        renderedVertices = this.renderer.render();
+
+        Main.NUMBER_OF_VERTICES += renderedVertices;
+        Main.NUMBER_OF_DRAWCALLS++;
+
+        this.renderer.setModel(otherModel);
         
-        outputImage = AWTInterop.fromTexture(surface.getColorBufferTexture());
-        g.drawImage(outputImage, 0, 0, Main.WIDTH, Main.HEIGHT, null);
+        g.drawImage(this.renderer.colorBufferToImage(), 0, 0, Main.WIDTH, Main.HEIGHT, null);
 
         if (this.textEnabled) {
             g.setFont(BIG_FONT);
