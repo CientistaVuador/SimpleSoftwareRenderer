@@ -28,7 +28,6 @@ package cientistavuador.simplesoftwarerenderer.render;
 
 import cientistavuador.simplesoftwarerenderer.util.Pixels;
 import java.awt.image.BufferedImage;
-import org.joml.Vector4f;
 
 /**
  *

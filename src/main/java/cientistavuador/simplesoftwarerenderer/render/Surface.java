@@ -37,8 +37,8 @@ public class Surface {
     public static final int DEFAULT_WIDTH = 200;
     public static final int DEFAULT_HEIGHT = 150;
 
-    private int width;
-    private int height;
+    private final int width;
+    private final int height;
 
     private float[] colorBuffer;
     private float[] depthBuffer;
@@ -127,11 +127,11 @@ public class Surface {
         rgb[1] = this.colorBuffer[((x + (y * getWidth())) * 3) + 1];
         rgb[2] = this.colorBuffer[((x + (y * getWidth())) * 3) + 2];
     }
-    
+
     public float getDepth(int x, int y) {
         return this.depthBuffer[x + (y * getWidth())];
     }
-    
+
     public void clearColor(float r, float g, float b) {
         for (int x = 0; x < getWidth(); x++) {
             for (int y = 0; y < getHeight(); y++) {
@@ -141,15 +141,8 @@ public class Surface {
             }
         }
     }
-    
+
     public void clearDepth(float depth) {
         Arrays.fill(this.depthBuffer, depth);
-    }
-    
-    public void resize(int width, int height) {
-        this.width = width;
-        this.height = height;
-        this.colorBuffer = new float[width*height*3];
-        this.depthBuffer = new float[width*height];
     }
 }

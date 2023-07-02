@@ -234,71 +234,84 @@ public class VertexProcessor {
                 vertex(v0cx, v0cy, v0cz, v0cw, v0x, v0y, v0z, v0u, v0v, v0nx, v0ny, v0nz, v0r, v0g, v0b, v0a);
                 vertex(v1cx, v1cy, v1cz, v1cw, v1x, v1y, v1z, v1u, v1v, v1nx, v1ny, v1nz, v1r, v1g, v1b, v1a);
                 vertex(v2cx, v2cy, v2cz, v2cw, v2x, v2y, v2z, v2u, v2v, v2nx, v2ny, v2nz, v2r, v2g, v2b, v2a);
-
-                List<Integer> inputList = new ArrayList<>();
-                List<Integer> outputList = new ArrayList<>();
-
-                inputList.add(0);
-                inputList.add(1);
-                inputList.add(2);
+                
+                int[] inputList = new int[36];
+                int inputListIndex = 0;
+                int[] outputList = new int[36];
+                int outputListIndex = 0;
+                
+                inputList[0] = 0;
+                inputList[1] = 1;
+                inputList[2] = 2;
+                inputListIndex += 3;
 
                 for (Vector4f clippingEdge : VertexProcessor.clippingEdges) {
-                    if (inputList.size() < 3) {
+                    if (inputListIndex < 3) {
                         continue;
                     }
-                    outputList.clear();
-                    int idxPrev = inputList.get(0);
+                    outputListIndex = 0;
+                    int idxPrev = inputList[0];
                     //inputList, not output
                     //outputList.add(idxPrev);
-                    inputList.add(idxPrev);
+                    inputList[inputListIndex] = idxPrev;
+                    inputListIndex++;
                     float dpPrev = (clippingEdge.x() * this.vertices[(idxPrev * PROCESSED_VERTEX_SIZE) + 0]) + (clippingEdge.y() * this.vertices[(idxPrev * PROCESSED_VERTEX_SIZE) + 1]) + (clippingEdge.z() * this.vertices[(idxPrev * PROCESSED_VERTEX_SIZE) + 2]) + (clippingEdge.w() * this.vertices[(idxPrev * PROCESSED_VERTEX_SIZE) + 3]);
-                    for (int j = 1; j < inputList.size(); ++j) {
-                        int idx = inputList.get(j);
+                    for (int j = 1; j < inputListIndex; ++j) {
+                        int idx = inputList[j];
                         float dp = (clippingEdge.x() * this.vertices[(idx * PROCESSED_VERTEX_SIZE) + 0]) + (clippingEdge.y() * this.vertices[(idx * PROCESSED_VERTEX_SIZE) + 1]) + (clippingEdge.z() * this.vertices[(idx * PROCESSED_VERTEX_SIZE) + 2]) + (clippingEdge.w() * this.vertices[(idx * PROCESSED_VERTEX_SIZE) + 3]);
 
                         if (dpPrev >= 0) {
-                            outputList.add(idxPrev);
+                            outputList[outputListIndex] = idxPrev;
+                            outputListIndex++;
                         }
 
                         if (Math.signum(dp) != Math.signum(dpPrev)) {
                             float t = dp < 0 ? dpPrev / (dpPrev - dp) : -dpPrev / (dp - dpPrev);
                             int v = interpolateVertex(idxPrev, idx, 1f - t, t);
-                            outputList.add(v);
+                            outputList[outputListIndex] = v;
+                            outputListIndex++;
                         }
 
                         idxPrev = idx;
                         dpPrev = dp;
+                        
                     }
-                    inputList.clear();
-                    inputList.addAll(outputList);
+                    int[] e = inputList;
+                    
+                    inputListIndex = outputListIndex;
+                    inputList = outputList;
+                    outputList = e;
                 }
 
-                if (inputList.size() < 3) {
+                if (inputListIndex < 3) {
                     this.vertices = verticesStore;
                     this.verticesIndex = verticesIndexStore;
                     continue;
                 }
 
-                List<Integer> resultIndices = new ArrayList<>();
-
-                resultIndices.add(inputList.get(0));
-                resultIndices.add(inputList.get(1));
-                resultIndices.add(inputList.get(2));
-                for (int j = 3; j < inputList.size(); j++) {
-                    resultIndices.add(inputList.get(0));
-                    resultIndices.add(inputList.get(j - 1));
-                    resultIndices.add(inputList.get(j));
+                int[] resultIndices = new int[3 + ((inputListIndex - 3) * 3)];
+                int resultIndicesIndex = 0;
+                
+                resultIndices[0] = inputList[0];
+                resultIndices[1] = inputList[1];
+                resultIndices[2] = inputList[2];
+                resultIndicesIndex += 3;
+                for (int j = 3; j < inputListIndex; j++) {
+                    resultIndices[resultIndicesIndex+0] = inputList[0];
+                    resultIndices[resultIndicesIndex+1] = inputList[j - 1];
+                    resultIndices[resultIndicesIndex+2] = inputList[j];
+                    resultIndicesIndex += 3;
                 }
-
+                
                 float[] resultVertices = this.vertices;
 
                 this.vertices = verticesStore;
                 this.verticesIndex = verticesIndexStore;
 
-                for (int j = 0; j < (resultIndices.size() / 3); j++) {
-                    int cv0 = resultIndices.get((j * 3) + 0);
-                    int cv1 = resultIndices.get((j * 3) + 1);
-                    int cv2 = resultIndices.get((j * 3) + 2);
+                for (int j = 0; j < (resultIndices.length / 3); j++) {
+                    int cv0 = resultIndices[(j * 3) + 0];
+                    int cv1 = resultIndices[(j * 3) + 1];
+                    int cv2 = resultIndices[(j * 3) + 2];
 
                     float cv0cwinv = 1f / resultVertices[(cv0 * PROCESSED_VERTEX_SIZE) + 3];
                     float cv0cxw = resultVertices[(cv0 * PROCESSED_VERTEX_SIZE) + 0] * cv0cwinv;

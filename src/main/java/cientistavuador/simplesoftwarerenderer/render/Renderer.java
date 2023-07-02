@@ -37,14 +37,15 @@ import org.joml.Vector3f;
 public class Renderer {
     
     public static Renderer create(int width, int height) {
-        return new Renderer(new Surface(width, height));
+        return new Renderer(new Surface(width, height), new Surface(width, height));
     }
     
     public static Renderer create() {
         return create(Surface.DEFAULT_WIDTH, Surface.DEFAULT_HEIGHT);
     }
     
-    private final Surface surface;
+    private Surface frontSurface;
+    private Surface backSurface;
     
     //state
     private float clearDepth = 1f;
@@ -59,8 +60,9 @@ public class Renderer {
     private final Vector3f lightAmbient = new Vector3f(0.2f, 0.2f, 0.2f);
     private Texture texture = null;
     
-    private Renderer(Surface surface) {
-        this.surface = surface;
+    private Renderer(Surface frontSurface, Surface backSurface) {
+        this.frontSurface = frontSurface;
+        this.backSurface = backSurface;
     }
     
     //awt interop
@@ -74,7 +76,7 @@ public class Renderer {
 
     //surface
     public Surface getSurface() {
-        return surface;
+        return this.frontSurface;
     }
 
     public float getClearDepth() {
@@ -90,28 +92,29 @@ public class Renderer {
     }
     
     public void clearBuffers() {
-        this.surface.clearDepth(this.clearDepth);
-        this.surface.clearColor(this.clearColor.x(), this.clearColor.y(), this.clearColor.z());
+        this.frontSurface.clearDepth(this.clearDepth);
+        this.frontSurface.clearColor(this.clearColor.x(), this.clearColor.y(), this.clearColor.z());
     }
     
     public void resize(int width, int height) {
-        this.surface.resize(width, height);
+        this.frontSurface = new Surface(width, height);
+        this.backSurface = new Surface(width, height);
     }
     
     public int getWidth() {
-        return this.surface.getWidth();
+        return this.frontSurface.getWidth();
     }
     
     public int getHeight() {
-        return this.surface.getHeight();
+        return this.frontSurface.getHeight();
     }
     
     public Texture colorBuffer() {
-        return this.surface.getColorBufferTexture();
+        return this.frontSurface.getColorBufferTexture();
     }
     
     public Texture depthBuffer() {
-        return this.surface.getDepthBufferTexture();
+        return this.frontSurface.getDepthBufferTexture();
     }
     
     public BufferedImage colorBufferToImage() {
@@ -120,6 +123,13 @@ public class Renderer {
     
     public BufferedImage depthBufferToImage() {
         return this.textureToImage(this.depthBuffer());
+    }
+    
+    public void flipSurfaces() {
+        Surface front = this.frontSurface;
+        Surface back = this.backSurface;
+        this.frontSurface = back;
+        this.backSurface = front;
     }
     
     //vertex builder
@@ -212,7 +222,7 @@ public class Renderer {
         float[] processed = processor.process();
         
         Rasterizer rasterizer = new Rasterizer(
-                this.surface,
+                this.frontSurface,
                 this.texture,
                 processed,
                 this.lightDirection,

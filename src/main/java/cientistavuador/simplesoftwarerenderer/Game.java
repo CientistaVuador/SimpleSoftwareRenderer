@@ -10,7 +10,9 @@ import java.awt.Graphics2D;
 import java.awt.event.KeyEvent;
 import cientistavuador.simplesoftwarerenderer.camera.FreeCamera;
 import cientistavuador.simplesoftwarerenderer.debug.DebugCounter;
+import cientistavuador.simplesoftwarerenderer.render.AWTInterop;
 import cientistavuador.simplesoftwarerenderer.render.Renderer;
+import cientistavuador.simplesoftwarerenderer.render.Surface;
 import cientistavuador.simplesoftwarerenderer.resources.ImageResources;
 import java.awt.Font;
 import java.awt.image.BufferedImage;
@@ -18,6 +20,9 @@ import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.nio.charset.StandardCharsets;
+import java.util.concurrent.Exchanger;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 import org.joml.Matrix4f;
 
 /**
@@ -37,11 +42,23 @@ public class Game {
     private boolean textEnabled = true;
     private final FreeCamera camera = new FreeCamera();
 
-    private final Renderer renderer = Renderer.create(400, 300);
+    private final Renderer renderer = Renderer.create(200, 150);
     private float rotation = 0f;
-
-    private final DebugCounter counter = new DebugCounter();
     
+    private Throwable imageThreadException = null;
+    private final Exchanger<Object> imageThreadExchanger = new Exchanger<>();
+    private final Thread imageThread = new Thread(() -> {
+        try {
+            Surface surface = (Surface) this.imageThreadExchanger.exchange(null);
+            while (true) {
+                BufferedImage result = AWTInterop.fromTexture(surface.getColorBufferTexture());
+                surface = (Surface) this.imageThreadExchanger.exchange(result);
+            }
+        } catch (Exception ex) {
+            throw new RuntimeException(ex);
+        }
+    }, "Image-Thread");
+
     private Game() {
         //load 3d model, texture and model matrix
         loadCottage();
@@ -52,12 +69,6 @@ public class Game {
                         .scale(0.25f)
                         .rotateY((float) Math.toRadians(45f))
         );
-        
-        counter.setTimerAction(() -> {
-            counter.print();
-            counter.clear();
-        });
-        counter.setTimerActionInterval(3000);
     }
 
     private void loadCottage() {
@@ -117,23 +128,30 @@ public class Game {
 
     public void start() {
         camera.setPosition(0, 0, 1f);
+        Thread currentThread = Thread.currentThread();
+        this.imageThread.setUncaughtExceptionHandler((t, e) -> {
+            this.imageThreadException = e;
+            currentThread.interrupt();
+        });
+        this.imageThread.setDaemon(true);
+        this.imageThread.start();
     }
 
     public void loop(Graphics2D g) {
+        if (this.imageThreadException != null) {
+            throw new RuntimeException("Exception in Image Thread", this.imageThreadException);
+        }
+
         camera.updateMovement();
 
         g.setColor(Color.BLACK);
         g.fillRect(0, 0, 800, 600);
-
-        counter.markStart("Clear Buffers");
+        
         this.renderer.clearBuffers();
-        counter.markEnd("Clear Buffers");
-        
+
         this.renderer.setProjectionView(new Matrix4f(this.camera.getProjectionView()));
-        
-        counter.markStart("Render House");
+
         int renderedVertices = this.renderer.render();
-        counter.markEnd("Render House");
 
         Main.NUMBER_OF_VERTICES += renderedVertices;
         Main.NUMBER_OF_DRAWCALLS++;
@@ -150,23 +168,27 @@ public class Game {
         if (this.rotation > 360f) {
             this.rotation = 0f;
         }
-
-        counter.markStart("Render Tiny House");
+        
         renderedVertices = this.renderer.render();
-        counter.markEnd("Render Tiny House");
 
         Main.NUMBER_OF_VERTICES += renderedVertices;
         Main.NUMBER_OF_DRAWCALLS++;
 
         this.renderer.setModel(otherModel);
-        
-        counter.markStart("Color Buffer to Image");
-        BufferedImage e = this.renderer.colorBufferToImage();
-        counter.markEnd("Color Buffer to Image");
-        
-        counter.markStart("Output");
-        g.drawImage(e, 0, 0, Main.WIDTH, Main.HEIGHT, null);
-        counter.markEnd("Output");
+
+        try {
+            BufferedImage e = (BufferedImage) this.imageThreadExchanger.exchange(this.renderer.getSurface());
+
+            this.renderer.flipSurfaces();
+
+            g.drawImage(e, 0, 0, Main.WIDTH, Main.HEIGHT, null);
+        } catch (InterruptedException ex) {
+            if (this.imageThreadException != null) {
+                throw new RuntimeException("Exception in Image Thread", this.imageThreadException);
+            } else {
+                throw new RuntimeException(ex);
+            }
+        }
 
         if (this.textEnabled) {
             g.setFont(BIG_FONT);
