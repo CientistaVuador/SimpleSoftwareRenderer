@@ -88,8 +88,8 @@ public class Main {
     public static boolean THROW_GL_GLFW_ERRORS = true;
 
     public static String WINDOW_TITLE = "CienCraft - FPS: 60";
-    public static int WIDTH = 800;
-    public static int HEIGHT = 600;
+    public static int WIDTH = 1280;
+    public static int HEIGHT = 720;
     public static double TPF = 1 / 60d;
     public static int FPS = 60;
     public static long WINDOW_POINTER = NULL;

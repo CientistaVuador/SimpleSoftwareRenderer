@@ -168,9 +168,9 @@ public class Rasterizer {
             int maxYP = Math.round(maxY);
             int minXP = Math.round(minX);
             int minYP = Math.round(minY);
-
-            for (int x = minXP; x <= maxXP; x++) {
-                for (int y = minYP; y <= maxYP; y++) {
+            
+            for (int y = minYP; y <= maxYP; y++) {
+                for (int x = minXP; x <= maxXP; x++) {
                     if (x < 0 || x >= width || y < 0 || y >= height) {
                         continue;
                     }

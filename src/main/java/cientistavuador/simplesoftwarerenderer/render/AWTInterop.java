@@ -35,39 +35,6 @@ import java.awt.image.BufferedImage;
  */
 public class AWTInterop {
     
-    public static class BufferedTexture implements Texture {
-
-        private final BufferedImage image;
-
-        public BufferedTexture(BufferedImage image) {
-            this.image = image;
-        }
-
-        public BufferedImage getImage() {
-            return image;
-        }
-        
-        @Override
-        public int width() {
-            return image.getWidth();
-        }
-
-        @Override
-        public int height() {
-            return image.getHeight();
-        }
-
-        @Override
-        public void fetch(int x, int y, float[] result) {
-            int rgba = image.getRGB(x, (height() - 1) - y);
-            
-            result[0] = Pixels.decodeNormalized(rgba, 1);
-            result[1] = Pixels.decodeNormalized(rgba, 2);
-            result[2] = Pixels.decodeNormalized(rgba, 3);
-            result[3] = Pixels.decodeNormalized(rgba, 0);
-        }
-    }
-    
     public static Texture toTexture(BufferedImage image) {
         final int width = image.getWidth();
         final int height = image.getHeight();
