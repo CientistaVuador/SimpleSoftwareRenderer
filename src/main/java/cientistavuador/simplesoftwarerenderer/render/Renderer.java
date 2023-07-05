@@ -54,6 +54,8 @@ public class Renderer {
     private float[] vertices = null;
     private Matrix4f projectionView = null;
     private Matrix4f model = null;
+    private boolean depthOnly = false;
+    private boolean bilinearFiltering = false;
     
     private final Vector3f lightDirection = new Vector3f(-1f, -1f, -1f).normalize();
     private final Vector3f lightDiffuse = new Vector3f(0.8f, 0.8f, 0.8f);
@@ -212,6 +214,22 @@ public class Renderer {
     public Vector3f getLightAmbient() {
         return lightAmbient;
     }
+
+    public boolean isDepthOnly() {
+        return depthOnly;
+    }
+
+    public void setDepthOnly(boolean depthOnly) {
+        this.depthOnly = depthOnly;
+    }
+
+    public boolean isBilinearFiltering() {
+        return bilinearFiltering;
+    }
+
+    public void setBilinearFiltering(boolean bilinearFiltering) {
+        this.bilinearFiltering = bilinearFiltering;
+    }
     
     //render
     public int render() {
@@ -227,7 +245,9 @@ public class Renderer {
                 processed,
                 this.lightDirection,
                 this.lightDiffuse, 
-                this.lightAmbient
+                this.lightAmbient,
+                this.depthOnly,
+                this.bilinearFiltering
         );
         rasterizer.render();
         

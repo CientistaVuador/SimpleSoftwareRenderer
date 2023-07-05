@@ -40,14 +40,18 @@ public class Rasterizer {
     private final Vector3fc lightDirection;
     private final Vector3fc lightDiffuse;
     private final Vector3fc lightAmbient;
+    private final boolean depthOnly;
+    private final boolean bilinear;
 
-    public Rasterizer(Surface surface, Texture texture, float[] vertices, Vector3fc lightDirection, Vector3fc lightDiffuse, Vector3fc lightAmbient) {
+    public Rasterizer(Surface surface, Texture texture, float[] vertices, Vector3fc lightDirection, Vector3fc lightDiffuse, Vector3fc lightAmbient, boolean depthOnly, boolean bilinear) {
         this.surface = surface;
         this.texture = texture;
         this.vertices = vertices;
         this.lightDirection = lightDirection;
         this.lightDiffuse = lightDiffuse;
         this.lightAmbient = lightAmbient;
+        this.depthOnly = depthOnly;
+        this.bilinear = bilinear;
     }
 
     public Vector3fc getLightDirection() {
@@ -74,6 +78,14 @@ public class Rasterizer {
         return vertices;
     }
 
+    public boolean isDepthOnly() {
+        return depthOnly;
+    }
+
+    public boolean isBilinear() {
+        return bilinear;
+    }
+    
     public void render() {
         float[] color = new float[3];
         float[] textureColor = new float[4];
@@ -182,6 +194,10 @@ public class Rasterizer {
                         continue;
                     }
                     this.surface.setDepth(x, y, depth);
+                    
+                    if (this.depthOnly) {
+                        continue;
+                    }
 
                     float worldx = ((wv0 * v0x) + (wv1 * v1x) + (wv2 * v2x)) * w;
                     float worldy = ((wv0 * v0y) + (wv1 * v1y) + (wv2 * v2y)) * w;
@@ -204,7 +220,11 @@ public class Rasterizer {
                     float ca = ((wv0 * v0a) + (wv1 * v1a) + (wv2 * v2a)) * w;
 
                     if (this.texture != null) {
-                        this.texture.sample(u, v, textureColor);
+                        if (this.bilinear) {
+                            this.texture.sampleBilinear(u, v, textureColor);
+                        } else {
+                            this.texture.sampleNearest(u, v, textureColor);
+                        }
 
                         cr *= textureColor[0];
                         cg *= textureColor[1];

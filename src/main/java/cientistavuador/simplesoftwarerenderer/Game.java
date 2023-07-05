@@ -9,7 +9,6 @@ import java.awt.Color;
 import java.awt.Graphics2D;
 import java.awt.event.KeyEvent;
 import cientistavuador.simplesoftwarerenderer.camera.FreeCamera;
-import cientistavuador.simplesoftwarerenderer.debug.DebugCounter;
 import cientistavuador.simplesoftwarerenderer.render.AWTInterop;
 import cientistavuador.simplesoftwarerenderer.render.Renderer;
 import cientistavuador.simplesoftwarerenderer.render.Surface;
@@ -21,8 +20,6 @@ import java.io.IOException;
 import java.io.InputStreamReader;
 import java.nio.charset.StandardCharsets;
 import java.util.concurrent.Exchanger;
-import java.util.logging.Level;
-import java.util.logging.Logger;
 import org.joml.Matrix4f;
 
 /**
@@ -42,7 +39,7 @@ public class Game {
     private boolean textEnabled = true;
     private final FreeCamera camera = new FreeCamera();
 
-    private final Renderer renderer = Renderer.create(200, 150);
+    private final Renderer renderer = Renderer.create(400, 300);
     private float rotation = 0f;
     
     private Throwable imageThreadException = null;
@@ -135,6 +132,7 @@ public class Game {
         });
         this.imageThread.setDaemon(true);
         this.imageThread.start();
+        this.renderer.setBilinearFiltering(false);
     }
 
     public void loop(Graphics2D g) {
@@ -150,7 +148,7 @@ public class Game {
         this.renderer.clearBuffers();
 
         this.renderer.setProjectionView(new Matrix4f(this.camera.getProjectionView()));
-
+        
         int renderedVertices = this.renderer.render();
 
         Main.NUMBER_OF_VERTICES += renderedVertices;
@@ -173,7 +171,7 @@ public class Game {
 
         Main.NUMBER_OF_VERTICES += renderedVertices;
         Main.NUMBER_OF_DRAWCALLS++;
-
+        
         this.renderer.setModel(otherModel);
 
         try {

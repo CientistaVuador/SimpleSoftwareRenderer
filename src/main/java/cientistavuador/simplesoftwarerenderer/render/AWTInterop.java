@@ -69,13 +69,42 @@ public class AWTInterop {
     }
     
     public static Texture toTexture(BufferedImage image) {
-        return new BufferedTexture(image);
+        final int width = image.getWidth();
+        final int height = image.getHeight();
+        final int[] bufferedData = image.getRGB(0, 0, width, height, null, 0, width);
+        final float[] pixelData = new float[width * height * 4];
+        
+        for (int i = 0; i < width*height; i++) {
+            int x = i % width;
+            int y = i / width;
+            
+            int pixel = bufferedData[x + (((height-1) - y) * width)];
+            
+            pixelData[((x + (y * width)) * 4) + 0] = Pixels.decodeNormalized(pixel, 1);
+            pixelData[((x + (y * width)) * 4) + 1] = Pixels.decodeNormalized(pixel, 2);
+            pixelData[((x + (y * width)) * 4) + 2] = Pixels.decodeNormalized(pixel, 3);
+            pixelData[((x + (y * width)) * 4) + 3] = Pixels.decodeNormalized(pixel, 0);
+        }
+        
+        return new Texture() {
+            @Override
+            public int width() {
+                return width;
+            }
+
+            @Override
+            public int height() {
+                return height;
+            }
+
+            @Override
+            public void fetch(int x, int y, float[] result) {
+                System.arraycopy(pixelData, (x + (y * width)) * 4, result, 0, 4);
+            }
+        };
     }
     
     public static BufferedImage fromTexture(Texture t) {
-        if (t instanceof BufferedTexture e) {
-            return e.getImage();
-        }
         if (t == null) {
             throw new NullPointerException("Texture is null.");
         }
