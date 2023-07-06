@@ -65,8 +65,8 @@ public class AWTInterop {
             }
 
             @Override
-            public void fetch(int x, int y, float[] result) {
-                System.arraycopy(pixelData, (x + (y * width)) * 4, result, 0, 4);
+            public void fetch(int x, int y, float[] result, int offset) {
+                System.arraycopy(pixelData, (x + (y * width)) * 4, result, offset, 4);
             }
         };
     }
@@ -87,7 +87,7 @@ public class AWTInterop {
             int x = i % width;
             int y = i / width;
             
-            t.fetch(x, (height - y) - 1, cache);
+            t.fetch(x, (height - y) - 1, cache, 0);
             data[i] = Pixels.encodeNormalized(
                     cache[3],
                     cache[0],

@@ -20,6 +20,8 @@ import java.io.IOException;
 import java.io.InputStreamReader;
 import java.nio.charset.StandardCharsets;
 import java.util.concurrent.Exchanger;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 import org.joml.Matrix4f;
 
 /**
@@ -41,13 +43,17 @@ public class Game {
 
     private final Renderer renderer = Renderer.create(400, 300);
     private float rotation = 0f;
-    
+
     private Throwable imageThreadException = null;
     private final Exchanger<Object> imageThreadExchanger = new Exchanger<>();
     private final Thread imageThread = new Thread(() -> {
         try {
             Surface surface = (Surface) this.imageThreadExchanger.exchange(null);
             while (true) {
+                if (surface == null) {
+                    surface = (Surface) this.imageThreadExchanger.exchange(null);
+                    continue;
+                }
                 BufferedImage result = AWTInterop.fromTexture(surface.getColorBufferTexture());
                 surface = (Surface) this.imageThreadExchanger.exchange(result);
             }
@@ -132,7 +138,7 @@ public class Game {
         });
         this.imageThread.setDaemon(true);
         this.imageThread.start();
-        this.renderer.setBilinearFiltering(false);
+        this.renderer.setBilinearFilteringEnabled(false);
     }
 
     public void loop(Graphics2D g) {
@@ -144,11 +150,11 @@ public class Game {
 
         g.setColor(Color.BLACK);
         g.fillRect(0, 0, 800, 600);
-        
+
         this.renderer.clearBuffers();
 
         this.renderer.setProjectionView(new Matrix4f(this.camera.getProjectionView()));
-        
+
         int renderedVertices = this.renderer.render();
 
         Main.NUMBER_OF_VERTICES += renderedVertices;
@@ -166,12 +172,12 @@ public class Game {
         if (this.rotation > 360f) {
             this.rotation = 0f;
         }
-        
+
         renderedVertices = this.renderer.render();
 
         Main.NUMBER_OF_VERTICES += renderedVertices;
         Main.NUMBER_OF_DRAWCALLS++;
-        
+
         this.renderer.setModel(otherModel);
 
         try {
@@ -203,7 +209,10 @@ public class Game {
                 "  Shift - Run",
                 "  Alt - Wander",
                 "  Ctrl - Unlock/Lock mouse",
-                "  T - Hide This Wall of Text."
+                "  T - Hide This Wall of Text.",
+                "  M - Multithread [" + (this.renderer.isMultithreadEnabled() ? "Enabled" : "Disabled") + "]",
+                "  B - Bilinear Filtering [" + (this.renderer.isBilinearFilteringEnabled() ? "Enabled" : "Disabled") + "]",
+                "  R - Resolution [" + this.renderer.getWidth() + "x" + this.renderer.getHeight() + "]"
             };
 
             int offset = SMALL_FONT.getSize();
@@ -229,6 +238,49 @@ public class Game {
     public void keyCallback(KeyEvent e, boolean pressed) {
         if (e.getKeyCode() == KeyEvent.VK_T && pressed) {
             this.textEnabled = !this.textEnabled;
+        }
+        if (e.getKeyCode() == KeyEvent.VK_M && pressed) {
+            this.renderer.setMultithreadEnabled(!this.renderer.isMultithreadEnabled());
+        }
+        if (e.getKeyCode() == KeyEvent.VK_B && pressed) {
+            this.renderer.setBilinearFilteringEnabled(!this.renderer.isBilinearFilteringEnabled());
+        }
+        if (e.getKeyCode() == KeyEvent.VK_R && pressed) {
+            try {
+                this.imageThreadExchanger.exchange(null);
+            } catch (InterruptedException ex) {
+                if (this.imageThreadException != null) {
+                    throw new RuntimeException("Exception in Image Thread", this.imageThreadException);
+                } else {
+                    throw new RuntimeException(ex);
+                }
+            }
+            switch (this.renderer.getWidth()) {
+                case 100 -> {
+                    this.renderer.resize(200, 150);
+                }
+                case 200 -> {
+                    this.renderer.resize(300, 225);
+                }
+                case 300 -> {
+                    this.renderer.resize(400, 300);
+                }
+                case 400 -> {
+                    this.renderer.resize(500, 375);
+                }
+                case 500 -> {
+                    this.renderer.resize(600, 450);
+                }
+                case 600 -> {
+                    this.renderer.resize(700, 525);
+                }
+                case 700 -> {
+                    this.renderer.resize(800, 600);
+                }
+                case 800 -> {
+                    this.renderer.resize(100, 75);
+                }
+            }
         }
     }
 

@@ -27,7 +27,6 @@
 package cientistavuador.simplesoftwarerenderer.render;
 
 import java.util.Arrays;
-import java.util.concurrent.atomic.AtomicIntegerArray;
 
 /**
  *
@@ -66,11 +65,11 @@ public class Surface {
             }
 
             @Override
-            public void fetch(int x, int y, float[] result) {
-                result[0] = Surface.this.colorBuffer[((x + (y * width())) * 3) + 0];
-                result[1] = Surface.this.colorBuffer[((x + (y * width())) * 3) + 1];
-                result[2] = Surface.this.colorBuffer[((x + (y * width())) * 3) + 2];
-                result[3] = 1f;
+            public void fetch(int x, int y, float[] result, int offset) {
+                result[offset + 0] = Surface.this.colorBuffer[((x + (y * width())) * 3) + 0];
+                result[offset + 1] = Surface.this.colorBuffer[((x + (y * width())) * 3) + 1];
+                result[offset + 2] = Surface.this.colorBuffer[((x + (y * width())) * 3) + 2];
+                result[offset + 3] = 1f;
             }
         };
         this.depthBufferTexture = new Texture() {
@@ -85,12 +84,12 @@ public class Surface {
             }
 
             @Override
-            public void fetch(int x, int y, float[] result) {
+            public void fetch(int x, int y, float[] result, int offset) {
                 float depth = Surface.this.depthBuffer[x + (y * width())];
-                result[0] = depth;
-                result[1] = depth;
-                result[2] = depth;
-                result[3] = 1f;
+                result[offset + 0] = depth;
+                result[offset + 1] = depth;
+                result[offset + 2] = depth;
+                result[offset + 3] = 1f;
             }
         };
     }
@@ -120,9 +119,17 @@ public class Surface {
         this.colorBuffer[((x + (y * getWidth())) * 3) + 1] = rgb[1];
         this.colorBuffer[((x + (y * getWidth())) * 3) + 2] = rgb[2];
     }
+    
+    public void setColor(int x, int y, float[] rgbArray, int offset, int length) {
+        System.arraycopy(rgbArray, offset, this.colorBuffer, (x + (y * getWidth())) * 3, length);
+    }
 
     public void setDepth(int x, int y, float depth) {
         this.depthBuffer[x + (y * getWidth())] = depth;
+    }
+    
+    public void setDepth(int x, int y, float[] depthArray, int offset, int length) {
+        System.arraycopy(depthArray, offset, this.depthBuffer, x + (y * getWidth()), length);
     }
 
     public void getColor(int x, int y, float[] rgb) {
@@ -130,9 +137,17 @@ public class Surface {
         rgb[1] = this.colorBuffer[((x + (y * getWidth())) * 3) + 1];
         rgb[2] = this.colorBuffer[((x + (y * getWidth())) * 3) + 2];
     }
+    
+    public void getColor(int x, int y, float[] rgbArray, int offset, int length) {
+        System.arraycopy(this.colorBuffer, (x + (y * getWidth())) * 3, rgbArray, offset, length);
+    }
 
     public float getDepth(int x, int y) {
         return this.depthBuffer[x + (y * getWidth())];
+    }
+    
+    public void getDepth(int x, int y, float[] depthArray, int offset, int length) {
+        System.arraycopy(this.depthBuffer, x + (y * getWidth()), depthArray, offset, length);
     }
     
     public void clearColor(float r, float g, float b) {

@@ -26,12 +26,9 @@
  */
 package cientistavuador.simplesoftwarerenderer.render;
 
-import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
-import java.util.logging.Level;
-import java.util.logging.Logger;
 import org.joml.Vector3fc;
 
 /**
@@ -48,6 +45,7 @@ public class Rasterizer {
     private final Vector3fc lightAmbient;
     private final boolean depthOnly;
     private final boolean bilinear;
+    private final boolean multithread;
 
     private final class RasterizerVertex {
 
@@ -90,7 +88,7 @@ public class Rasterizer {
         }
     }
 
-    public Rasterizer(Surface surface, Texture texture, float[] vertices, Vector3fc lightDirection, Vector3fc lightDiffuse, Vector3fc lightAmbient, boolean depthOnly, boolean bilinear) {
+    public Rasterizer(Surface surface, Texture texture, float[] vertices, Vector3fc lightDirection, Vector3fc lightDiffuse, Vector3fc lightAmbient, boolean depthOnly, boolean bilinear, boolean multithread) {
         this.surface = surface;
         this.texture = texture;
         this.vertices = vertices;
@@ -99,6 +97,7 @@ public class Rasterizer {
         this.lightAmbient = lightAmbient;
         this.depthOnly = depthOnly;
         this.bilinear = bilinear;
+        this.multithread = multithread;
     }
 
     public Vector3fc getLightDirection() {
@@ -153,13 +152,32 @@ public class Rasterizer {
             float minX = Math.min(Math.min(v0.cx, v1.cx), v2.cx);
             float minY = Math.min(Math.min(v0.cy, v1.cy), v2.cy);
 
-            int maxXP = clamp(Math.round(maxX) + 1, 0, width);
-            int maxYP = clamp(Math.round(maxY) + 1, 0, height);
+            int maxXP = clamp(Math.round(maxX), 0, width);
+            int maxYP = clamp(Math.round(maxY), 0, height);
             int minXP = clamp(Math.round(minX), 0, width - 1);
             int minYP = clamp(Math.round(minY), 0, height - 1);
 
+            boolean multithreadActivated = (maxXP - minXP) >= 32 && this.multithread;
+            
+            Future<?>[] tasks = new Future<?>[maxYP - minYP];
             for (int y = minYP; y < maxYP; y++) {
-                renderLine(inverse, y, minXP, maxXP, v0, v1, v2);
+                if (multithreadActivated) {
+                    int finalY = y;
+                    tasks[y - minYP] = CompletableFuture.runAsync(() -> {
+                        renderLine(inverse, finalY, minXP, maxXP, v0, v1, v2);
+                    });
+                } else {
+                    renderLine(inverse, y, minXP, maxXP, v0, v1, v2);
+                }
+            }
+            if (multithreadActivated) {
+                try {
+                    for (Future<?> task : tasks) {
+                        task.get();
+                    }
+                } catch (InterruptedException | ExecutionException ex) {
+                    throw new RuntimeException(ex);
+                }
             }
         }
     }
@@ -169,9 +187,15 @@ public class Rasterizer {
     }
 
     private void renderLine(float inverse, int y, int minX, int maxX, RasterizerVertex v0, RasterizerVertex v1, RasterizerVertex v2) {
-        float[] color = new float[3];
+        float[] surfaceDepth = new float[maxX - minX];
+        this.surface.getDepth(minX, y, surfaceDepth, 0, surfaceDepth.length);
+        float[] surfaceColor = new float[(maxX - minX) * 3];
+        this.surface.getColor(minX, y, surfaceColor, 0, surfaceColor.length);
+
         float[] textureColor = new float[4];
         for (int x = minX; x < maxX; x++) {
+            int pixelIndex = x - minX;
+
             float xPos = x + 0.5f;
             float yPos = y + 0.5f;
 
@@ -186,11 +210,12 @@ public class Rasterizer {
             float w = 1f / invw;
 
             float depth = (wv0 * v0.cz) + (wv1 * v1.cz) + (wv2 * v2.cz);
-            float currentDepth = this.surface.getDepth(x, y);
+            float currentDepth = surfaceDepth[pixelIndex];
             if (depth > currentDepth) {
+                surfaceDepth[pixelIndex] = currentDepth;
                 continue;
             }
-            this.surface.setDepth(x, y, depth);
+            surfaceDepth[pixelIndex] = depth;
 
             if (this.depthOnly) {
                 continue;
@@ -218,9 +243,9 @@ public class Rasterizer {
 
             if (this.texture != null) {
                 if (this.bilinear) {
-                    this.texture.sampleBilinear(u, v, textureColor);
+                    this.texture.sampleBilinear(u, v, textureColor, 0);
                 } else {
-                    this.texture.sampleNearest(u, v, textureColor);
+                    this.texture.sampleNearest(u, v, textureColor, 0);
                 }
 
                 cr *= textureColor[0];
@@ -239,18 +264,18 @@ public class Rasterizer {
             r += lightDiffuse.x() * diffuse * cr;
             g += lightDiffuse.y() * diffuse * cg;
             b += lightDiffuse.z() * diffuse * cb;
-
-            this.surface.getColor(x, y, color);
-
-            float outR = (r * a) + (color[0] * (1f - a));
-            float outG = (g * a) + (color[1] * (1f - a));
-            float outB = (b * a) + (color[2] * (1f - a));
-
-            color[0] = outR;
-            color[1] = outG;
-            color[2] = outB;
-            this.surface.setColor(x, y, color);
+            
+            float outR = (r * a) + (surfaceColor[(pixelIndex * 3) + 0] * (1f - a));
+            float outG = (g * a) + (surfaceColor[(pixelIndex * 3) + 1] * (1f - a));
+            float outB = (b * a) + (surfaceColor[(pixelIndex * 3) + 2] * (1f - a));
+            
+            surfaceColor[(pixelIndex * 3) + 0] = outR;
+            surfaceColor[(pixelIndex * 3) + 1] = outG;
+            surfaceColor[(pixelIndex * 3) + 2] = outB;
         }
+
+        this.surface.setDepth(minX, y, surfaceDepth, 0, surfaceDepth.length);
+        this.surface.setColor(minX, y, surfaceColor, 0, surfaceColor.length);
     }
 
 }

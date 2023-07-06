@@ -33,14 +33,14 @@ package cientistavuador.simplesoftwarerenderer.render;
 public interface Texture {
     public int width();
     public int height();
-    public default void sampleNearest(float x, float y, float[] result) {
+    public default void sampleNearest(float x, float y, float[] result, int offset) {
         int width = width();
         int height = height();
         int pX = (Math.round(Math.abs(x) * width) % width);
         int pY = (Math.round(Math.abs(y) * height) % height);
-        fetch(pX, pY, result);
+        fetch(pX, pY, result, offset);
     }
-    public default void sampleBilinear(float x, float y, float[] result) {
+    public default void sampleBilinear(float x, float y, float[] result, int offset) {
         int width = width();
         int height = height();
         
@@ -53,43 +53,43 @@ public interface Texture {
         float weightX = pX - bottomLeftX;
         float weightY = pY - bottomLeftY;
         
-        fetch(bottomLeftX % width, bottomLeftY % height, result);
-        float bottomLeftR = result[0];
-        float bottomLeftG = result[1];
-        float bottomLeftB = result[2];
-        float bottomLeftA = result[3];
+        fetch(bottomLeftX % width, bottomLeftY % height, result, offset);
+        float bottomLeftR = result[offset + 0];
+        float bottomLeftG = result[offset + 1];
+        float bottomLeftB = result[offset + 2];
+        float bottomLeftA = result[offset + 3];
         
         int bottomRightX = (int) Math.ceil(pX);
         int bottomRightY = (int) Math.floor(pY);
         
-        fetch(bottomRightX % width, bottomRightY % height, result);
-        float bottomRightR = result[0];
-        float bottomRightG = result[1];
-        float bottomRightB = result[2];
-        float bottomRightA = result[3];
+        fetch(bottomRightX % width, bottomRightY % height, result, offset);
+        float bottomRightR = result[offset + 0];
+        float bottomRightG = result[offset + 1];
+        float bottomRightB = result[offset + 2];
+        float bottomRightA = result[offset + 3];
         
         int topLeftX = (int) Math.floor(pX);
         int topLeftY = (int) Math.ceil(pY);
         
-        fetch(topLeftX % width, topLeftY % height, result);
-        float topLeftR = result[0];
-        float topLeftG = result[1];
-        float topLeftB = result[2];
-        float topLeftA = result[3];
+        fetch(topLeftX % width, topLeftY % height, result, offset);
+        float topLeftR = result[offset + 0];
+        float topLeftG = result[offset + 1];
+        float topLeftB = result[offset + 2];
+        float topLeftA = result[offset + 3];
         
         int topRightX = (int) Math.ceil(pX);
         int topRightY = (int) Math.ceil(pY);
         
-        fetch(topRightX % width, topRightY % height, result);
-        float topRightR = result[0];
-        float topRightG = result[1];
-        float topRightB = result[2];
-        float topRightA = result[3];
+        fetch(topRightX % width, topRightY % height, result, offset);
+        float topRightR = result[offset + 0];
+        float topRightG = result[offset + 1];
+        float topRightB = result[offset + 2];
+        float topRightA = result[offset + 3];
         
-        result[0] = (bottomLeftR * (1f - weightX) * (1f - weightY)) + (bottomRightR * weightX * (1f - weightY)) + (topLeftR * (1f - weightX) * weightY) + (topRightR * weightX * weightY);
-        result[1] = (bottomLeftG * (1f - weightX) * (1f - weightY)) + (bottomRightG * weightX * (1f - weightY)) + (topLeftG * (1f - weightX) * weightY) + (topRightG * weightX * weightY);
-        result[2] = (bottomLeftB * (1f - weightX) * (1f - weightY)) + (bottomRightB * weightX * (1f - weightY)) + (topLeftB * (1f - weightX) * weightY) + (topRightB * weightX * weightY);
-        result[3] = (bottomLeftA * (1f - weightX) * (1f - weightY)) + (bottomRightA * weightX * (1f - weightY)) + (topLeftA * (1f - weightX) * weightY) + (topRightA * weightX * weightY);
+        result[offset + 0] = (bottomLeftR * (1f - weightX) * (1f - weightY)) + (bottomRightR * weightX * (1f - weightY)) + (topLeftR * (1f - weightX) * weightY) + (topRightR * weightX * weightY);
+        result[offset + 1] = (bottomLeftG * (1f - weightX) * (1f - weightY)) + (bottomRightG * weightX * (1f - weightY)) + (topLeftG * (1f - weightX) * weightY) + (topRightG * weightX * weightY);
+        result[offset + 2] = (bottomLeftB * (1f - weightX) * (1f - weightY)) + (bottomRightB * weightX * (1f - weightY)) + (topLeftB * (1f - weightX) * weightY) + (topRightB * weightX * weightY);
+        result[offset + 3] = (bottomLeftA * (1f - weightX) * (1f - weightY)) + (bottomRightA * weightX * (1f - weightY)) + (topLeftA * (1f - weightX) * weightY) + (topRightA * weightX * weightY);
     }
-    public void fetch(int x, int y, float[] result);
+    public void fetch(int x, int y, float[] result, int offset);
 }

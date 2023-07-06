@@ -54,8 +54,9 @@ public class Renderer {
     private float[] vertices = null;
     private Matrix4f projectionView = null;
     private Matrix4f model = null;
-    private boolean depthOnly = false;
-    private boolean bilinearFiltering = false;
+    private boolean depthOnlyEnabled = false;
+    private boolean bilinearFilteringEnabled = false;
+    private boolean multithreadEnabled = true;
 
     private final Vector3f lightDirection = new Vector3f(-1f, -1f, -1f).normalize();
     private final Vector3f lightDiffuse = new Vector3f(0.8f, 0.8f, 0.8f);
@@ -215,20 +216,28 @@ public class Renderer {
         return lightAmbient;
     }
 
-    public boolean isDepthOnly() {
-        return depthOnly;
+    public boolean isDepthOnlyEnabled() {
+        return depthOnlyEnabled;
     }
 
-    public void setDepthOnly(boolean depthOnly) {
-        this.depthOnly = depthOnly;
+    public void setDepthOnlyEnabled(boolean depthOnlyEnabled) {
+        this.depthOnlyEnabled = depthOnlyEnabled;
     }
 
-    public boolean isBilinearFiltering() {
-        return bilinearFiltering;
+    public boolean isBilinearFilteringEnabled() {
+        return bilinearFilteringEnabled;
     }
 
-    public void setBilinearFiltering(boolean bilinearFiltering) {
-        this.bilinearFiltering = bilinearFiltering;
+    public void setBilinearFilteringEnabled(boolean bilinearFilteringEnabled) {
+        this.bilinearFilteringEnabled = bilinearFilteringEnabled;
+    }
+
+    public boolean isMultithreadEnabled() {
+        return multithreadEnabled;
+    }
+
+    public void setMultithreadEnabled(boolean multithreadEnabled) {
+        this.multithreadEnabled = multithreadEnabled;
     }
 
     //render
@@ -246,8 +255,9 @@ public class Renderer {
                 this.lightDirection,
                 this.lightDiffuse,
                 this.lightAmbient,
-                this.depthOnly,
-                this.bilinearFiltering
+                this.depthOnlyEnabled,
+                this.bilinearFilteringEnabled,
+                this.multithreadEnabled
         );
         rasterizer.render();
 
