@@ -39,7 +39,7 @@ public class Game {
     private boolean textEnabled = true;
     private final FreeCamera camera = new FreeCamera();
 
-    private final Renderer renderer = Renderer.create(320, 240);
+    private final Renderer renderer = Renderer.create(400, 300);
     private float rotation = 0f;
     
     private Throwable imageThreadException = null;

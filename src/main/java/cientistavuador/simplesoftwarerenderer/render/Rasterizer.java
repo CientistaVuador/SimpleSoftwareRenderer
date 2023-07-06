@@ -26,6 +26,12 @@
  */
 package cientistavuador.simplesoftwarerenderer.render;
 
+import java.util.List;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.Future;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 import org.joml.Vector3fc;
 
 /**
@@ -42,6 +48,47 @@ public class Rasterizer {
     private final Vector3fc lightAmbient;
     private final boolean depthOnly;
     private final boolean bilinear;
+
+    private final class RasterizerVertex {
+
+        public final float cwinv;
+
+        public final float cx;
+        public final float cy;
+        public final float cz;
+        public final float x;
+        public final float y;
+        public final float z;
+        public final float u;
+        public final float v;
+        public final float nx;
+        public final float ny;
+        public final float nz;
+        public final float r;
+        public final float g;
+        public final float b;
+        public final float a;
+
+        public RasterizerVertex(int vertex, int width, int height) {
+            this.cwinv = 1f / Rasterizer.this.vertices[vertex + 3];
+
+            this.cx = ((Rasterizer.this.vertices[vertex + 0] * this.cwinv) + 1.0f) * 0.5f * width;
+            this.cy = ((Rasterizer.this.vertices[vertex + 1] * this.cwinv) + 1.0f) * 0.5f * height;
+            this.cz = ((Rasterizer.this.vertices[vertex + 2] * this.cwinv) + 1.0f) * 0.5f;
+            this.x = Rasterizer.this.vertices[vertex + 4] * this.cwinv;
+            this.y = Rasterizer.this.vertices[vertex + 5] * this.cwinv;
+            this.z = Rasterizer.this.vertices[vertex + 6] * this.cwinv;
+            this.u = Rasterizer.this.vertices[vertex + 7] * this.cwinv;
+            this.v = Rasterizer.this.vertices[vertex + 8] * this.cwinv;
+            this.nx = Rasterizer.this.vertices[vertex + 9] * this.cwinv;
+            this.ny = Rasterizer.this.vertices[vertex + 10] * this.cwinv;
+            this.nz = Rasterizer.this.vertices[vertex + 11] * this.cwinv;
+            this.r = Rasterizer.this.vertices[vertex + 12] * this.cwinv;
+            this.g = Rasterizer.this.vertices[vertex + 13] * this.cwinv;
+            this.b = Rasterizer.this.vertices[vertex + 14] * this.cwinv;
+            this.a = Rasterizer.this.vertices[vertex + 15] * this.cwinv;
+        }
+    }
 
     public Rasterizer(Surface surface, Texture texture, float[] vertices, Vector3fc lightDirection, Vector3fc lightDiffuse, Vector3fc lightAmbient, boolean depthOnly, boolean bilinear) {
         this.surface = surface;
@@ -85,176 +132,124 @@ public class Rasterizer {
     public boolean isBilinear() {
         return bilinear;
     }
-    
+
     public void render() {
-        float[] color = new float[3];
-        float[] textureColor = new float[4];
         int width = this.surface.getWidth();
         int height = this.surface.getHeight();
-        for (int i = 0; i < (this.vertices.length / (VertexProcessor.PROCESSED_VERTEX_SIZE * 3)); i++) {
-            int v0 = i * (VertexProcessor.PROCESSED_VERTEX_SIZE * 3);
-            int v1 = v0 + VertexProcessor.PROCESSED_VERTEX_SIZE;
-            int v2 = v1 + VertexProcessor.PROCESSED_VERTEX_SIZE;
+        int numberOfTriangles = this.vertices.length / (VertexProcessor.PROCESSED_VERTEX_SIZE * 3);
+        for (int i = 0; i < numberOfTriangles; i++) {
+            int v0i = i * (VertexProcessor.PROCESSED_VERTEX_SIZE * 3);
+            int v1i = v0i + VertexProcessor.PROCESSED_VERTEX_SIZE;
+            int v2i = v1i + VertexProcessor.PROCESSED_VERTEX_SIZE;
+            RasterizerVertex v0 = new RasterizerVertex(v0i, width, height);
+            RasterizerVertex v1 = new RasterizerVertex(v1i, width, height);
+            RasterizerVertex v2 = new RasterizerVertex(v2i, width, height);
 
-            //0
-            float v0cwinv = 1f / this.vertices[v0 + 3];
+            float inverse = 1f / ((v1.cy - v2.cy) * (v0.cx - v2.cx) + (v2.cx - v1.cx) * (v0.cy - v2.cy));
 
-            float v0cx = ((this.vertices[v0 + 0] * v0cwinv) + 1.0f) * 0.5f * width;
-            float v0cy = ((this.vertices[v0 + 1] * v0cwinv) + 1.0f) * 0.5f * height;
-            float v0cz = ((this.vertices[v0 + 2] * v0cwinv) + 1.0f) * 0.5f;
-            float v0x = this.vertices[v0 + 4] * v0cwinv;
-            float v0y = this.vertices[v0 + 5] * v0cwinv;
-            float v0z = this.vertices[v0 + 6] * v0cwinv;
-            float v0u = this.vertices[v0 + 7] * v0cwinv;
-            float v0v = this.vertices[v0 + 8] * v0cwinv;
-            float v0nx = this.vertices[v0 + 9] * v0cwinv;
-            float v0ny = this.vertices[v0 + 10] * v0cwinv;
-            float v0nz = this.vertices[v0 + 11] * v0cwinv;
-            float v0r = this.vertices[v0 + 12] * v0cwinv;
-            float v0g = this.vertices[v0 + 13] * v0cwinv;
-            float v0b = this.vertices[v0 + 14] * v0cwinv;
-            float v0a = this.vertices[v0 + 15] * v0cwinv;
-            //
+            float maxX = Math.max(Math.max(v0.cx, v1.cx), v2.cx);
+            float maxY = Math.max(Math.max(v0.cy, v1.cy), v2.cy);
 
-            //1
-            float v1cwinv = 1f / this.vertices[v1 + 3];
+            float minX = Math.min(Math.min(v0.cx, v1.cx), v2.cx);
+            float minY = Math.min(Math.min(v0.cy, v1.cy), v2.cy);
 
-            float v1cx = ((this.vertices[v1 + 0] * v1cwinv) + 1.0f) * 0.5f * width;
-            float v1cy = ((this.vertices[v1 + 1] * v1cwinv) + 1.0f) * 0.5f * height;
-            float v1cz = ((this.vertices[v1 + 2] * v1cwinv) + 1.0f) * 0.5f;
-            float v1x = this.vertices[v1 + 4] * v1cwinv;
-            float v1y = this.vertices[v1 + 5] * v1cwinv;
-            float v1z = this.vertices[v1 + 6] * v1cwinv;
-            float v1u = this.vertices[v1 + 7] * v1cwinv;
-            float v1v = this.vertices[v1 + 8] * v1cwinv;
-            float v1nx = this.vertices[v1 + 9] * v1cwinv;
-            float v1ny = this.vertices[v1 + 10] * v1cwinv;
-            float v1nz = this.vertices[v1 + 11] * v1cwinv;
-            float v1r = this.vertices[v1 + 12] * v1cwinv;
-            float v1g = this.vertices[v1 + 13] * v1cwinv;
-            float v1b = this.vertices[v1 + 14] * v1cwinv;
-            float v1a = this.vertices[v1 + 15] * v1cwinv;
-            //
+            int maxXP = clamp(Math.round(maxX) + 1, 0, width);
+            int maxYP = clamp(Math.round(maxY) + 1, 0, height);
+            int minXP = clamp(Math.round(minX), 0, width - 1);
+            int minYP = clamp(Math.round(minY), 0, height - 1);
 
-            //2
-            float v2cwinv = 1f / this.vertices[v2 + 3];
-
-            float v2cx = ((this.vertices[v2 + 0] * v2cwinv) + 1.0f) * 0.5f * width;
-            float v2cy = ((this.vertices[v2 + 1] * v2cwinv) + 1.0f) * 0.5f * height;
-            float v2cz = ((this.vertices[v2 + 2] * v2cwinv) + 1.0f) * 0.5f;
-            float v2x = this.vertices[v2 + 4] * v2cwinv;
-            float v2y = this.vertices[v2 + 5] * v2cwinv;
-            float v2z = this.vertices[v2 + 6] * v2cwinv;
-            float v2u = this.vertices[v2 + 7] * v2cwinv;
-            float v2v = this.vertices[v2 + 8] * v2cwinv;
-            float v2nx = this.vertices[v2 + 9] * v2cwinv;
-            float v2ny = this.vertices[v2 + 10] * v2cwinv;
-            float v2nz = this.vertices[v2 + 11] * v2cwinv;
-            float v2r = this.vertices[v2 + 12] * v2cwinv;
-            float v2g = this.vertices[v2 + 13] * v2cwinv;
-            float v2b = this.vertices[v2 + 14] * v2cwinv;
-            float v2a = this.vertices[v2 + 15] * v2cwinv;
-            //
-
-            float inverse = 1f / ((v1cy - v2cy) * (v0cx - v2cx) + (v2cx - v1cx) * (v0cy - v2cy));
-
-            float maxX = Math.max(Math.max(v0cx, v1cx), v2cx);
-            float maxY = Math.max(Math.max(v0cy, v1cy), v2cy);
-
-            float minX = Math.min(Math.min(v0cx, v1cx), v2cx);
-            float minY = Math.min(Math.min(v0cy, v1cy), v2cy);
-
-            int maxXP = Math.round(maxX);
-            int maxYP = Math.round(maxY);
-            int minXP = Math.round(minX);
-            int minYP = Math.round(minY);
-            
-            for (int y = minYP; y <= maxYP; y++) {
-                for (int x = minXP; x <= maxXP; x++) {
-                    if (x < 0 || x >= width || y < 0 || y >= height) {
-                        continue;
-                    }
-
-                    float xPos = x + 0.5f;
-                    float yPos = y + 0.5f;
-
-                    float wv0 = ((v1cy - v2cy) * (xPos - v2cx) + (v2cx - v1cx) * (yPos - v2cy)) * inverse;
-                    float wv1 = ((v2cy - v0cy) * (xPos - v2cx) + (v0cx - v2cx) * (yPos - v2cy)) * inverse;
-                    float wv2 = 1 - wv0 - wv1;
-                    if (wv0 < 0f || wv1 < 0f || wv2 < 0f) {
-                        continue;
-                    }
-
-                    float invw = (wv0 * v0cwinv) + (wv1 * v1cwinv) + (wv2 * v2cwinv);
-                    float w = 1f / invw;
-
-                    float depth = (wv0 * v0cz) + (wv1 * v1cz) + (wv2 * v2cz);
-                    float currentDepth = this.surface.getDepth(x, y);
-                    if (depth > currentDepth) {
-                        continue;
-                    }
-                    this.surface.setDepth(x, y, depth);
-                    
-                    if (this.depthOnly) {
-                        continue;
-                    }
-
-                    float worldx = ((wv0 * v0x) + (wv1 * v1x) + (wv2 * v2x)) * w;
-                    float worldy = ((wv0 * v0y) + (wv1 * v1y) + (wv2 * v2y)) * w;
-                    float worldz = ((wv0 * v0z) + (wv1 * v1z) + (wv2 * v2z)) * w;
-
-                    float u = ((wv0 * v0u) + (wv1 * v1u) + (wv2 * v2u)) * w;
-                    float v = ((wv0 * v0v) + (wv1 * v1v) + (wv2 * v2v)) * w;
-
-                    float nx = ((wv0 * v0nx) + (wv1 * v1nx) + (wv2 * v2nx)) * w;
-                    float ny = ((wv0 * v0ny) + (wv1 * v1ny) + (wv2 * v2ny)) * w;
-                    float nz = ((wv0 * v0nz) + (wv1 * v1nz) + (wv2 * v2nz)) * w;
-                    float lengthinv = (float) (1.0 / Math.sqrt((nx * nx) + (ny * ny) + (nz * nz)));
-                    nx *= lengthinv;
-                    ny *= lengthinv;
-                    nz *= lengthinv;
-
-                    float cr = ((wv0 * v0r) + (wv1 * v1r) + (wv2 * v2r)) * w;
-                    float cg = ((wv0 * v0g) + (wv1 * v1g) + (wv2 * v2g)) * w;
-                    float cb = ((wv0 * v0b) + (wv1 * v1b) + (wv2 * v2b)) * w;
-                    float ca = ((wv0 * v0a) + (wv1 * v1a) + (wv2 * v2a)) * w;
-
-                    if (this.texture != null) {
-                        if (this.bilinear) {
-                            this.texture.sampleBilinear(u, v, textureColor);
-                        } else {
-                            this.texture.sampleNearest(u, v, textureColor);
-                        }
-
-                        cr *= textureColor[0];
-                        cg *= textureColor[1];
-                        cb *= textureColor[2];
-                        ca *= textureColor[3];
-                    }
-
-                    float r = lightAmbient.x() * cr;
-                    float g = lightAmbient.y() * cg;
-                    float b = lightAmbient.z() * cb;
-                    float a = ca;
-
-                    float diffuse = Math.max((nx * -lightDirection.x()) + (ny * -lightDirection.y()) + (nz * -lightDirection.z()), 0f);
-
-                    r += lightDiffuse.x() * diffuse * cr;
-                    g += lightDiffuse.y() * diffuse * cg;
-                    b += lightDiffuse.z() * diffuse * cb;
-
-                    this.surface.getColor(x, y, color);
-
-                    float outR = (r * a) + (color[0] * (1f - a));
-                    float outG = (g * a) + (color[1] * (1f - a));
-                    float outB = (b * a) + (color[2] * (1f - a));
-                    
-                    color[0] = outR;
-                    color[1] = outG;
-                    color[2] = outB;
-                    this.surface.setColor(x, y, color);
-                }
+            for (int y = minYP; y < maxYP; y++) {
+                renderLine(inverse, y, minXP, maxXP, v0, v1, v2);
             }
+        }
+    }
+
+    private int clamp(int v, int min, int max) {
+        return Math.max(Math.min(v, max), min);
+    }
+
+    private void renderLine(float inverse, int y, int minX, int maxX, RasterizerVertex v0, RasterizerVertex v1, RasterizerVertex v2) {
+        float[] color = new float[3];
+        float[] textureColor = new float[4];
+        for (int x = minX; x < maxX; x++) {
+            float xPos = x + 0.5f;
+            float yPos = y + 0.5f;
+
+            float wv0 = ((v1.cy - v2.cy) * (xPos - v2.cx) + (v2.cx - v1.cx) * (yPos - v2.cy)) * inverse;
+            float wv1 = ((v2.cy - v0.cy) * (xPos - v2.cx) + (v0.cx - v2.cx) * (yPos - v2.cy)) * inverse;
+            float wv2 = 1 - wv0 - wv1;
+            if (wv0 < 0f || wv1 < 0f || wv2 < 0f) {
+                continue;
+            }
+
+            float invw = (wv0 * v0.cwinv) + (wv1 * v1.cwinv) + (wv2 * v2.cwinv);
+            float w = 1f / invw;
+
+            float depth = (wv0 * v0.cz) + (wv1 * v1.cz) + (wv2 * v2.cz);
+            float currentDepth = this.surface.getDepth(x, y);
+            if (depth > currentDepth) {
+                continue;
+            }
+            this.surface.setDepth(x, y, depth);
+
+            if (this.depthOnly) {
+                continue;
+            }
+
+            float worldx = ((wv0 * v0.x) + (wv1 * v1.x) + (wv2 * v2.x)) * w;
+            float worldy = ((wv0 * v0.y) + (wv1 * v1.y) + (wv2 * v2.y)) * w;
+            float worldz = ((wv0 * v0.z) + (wv1 * v1.z) + (wv2 * v2.z)) * w;
+
+            float u = ((wv0 * v0.u) + (wv1 * v1.u) + (wv2 * v2.u)) * w;
+            float v = ((wv0 * v0.v) + (wv1 * v1.v) + (wv2 * v2.v)) * w;
+
+            float nx = ((wv0 * v0.nx) + (wv1 * v1.nx) + (wv2 * v2.nx)) * w;
+            float ny = ((wv0 * v0.ny) + (wv1 * v1.ny) + (wv2 * v2.ny)) * w;
+            float nz = ((wv0 * v0.nz) + (wv1 * v1.nz) + (wv2 * v2.nz)) * w;
+            float lengthinv = (float) (1.0 / Math.sqrt((nx * nx) + (ny * ny) + (nz * nz)));
+            nx *= lengthinv;
+            ny *= lengthinv;
+            nz *= lengthinv;
+
+            float cr = ((wv0 * v0.r) + (wv1 * v1.r) + (wv2 * v2.r)) * w;
+            float cg = ((wv0 * v0.g) + (wv1 * v1.g) + (wv2 * v2.g)) * w;
+            float cb = ((wv0 * v0.b) + (wv1 * v1.b) + (wv2 * v2.b)) * w;
+            float ca = ((wv0 * v0.a) + (wv1 * v1.a) + (wv2 * v2.a)) * w;
+
+            if (this.texture != null) {
+                if (this.bilinear) {
+                    this.texture.sampleBilinear(u, v, textureColor);
+                } else {
+                    this.texture.sampleNearest(u, v, textureColor);
+                }
+
+                cr *= textureColor[0];
+                cg *= textureColor[1];
+                cb *= textureColor[2];
+                ca *= textureColor[3];
+            }
+
+            float r = lightAmbient.x() * cr;
+            float g = lightAmbient.y() * cg;
+            float b = lightAmbient.z() * cb;
+            float a = ca;
+
+            float diffuse = Math.max((nx * -lightDirection.x()) + (ny * -lightDirection.y()) + (nz * -lightDirection.z()), 0f);
+
+            r += lightDiffuse.x() * diffuse * cr;
+            g += lightDiffuse.y() * diffuse * cg;
+            b += lightDiffuse.z() * diffuse * cb;
+
+            this.surface.getColor(x, y, color);
+
+            float outR = (r * a) + (color[0] * (1f - a));
+            float outG = (g * a) + (color[1] * (1f - a));
+            float outB = (b * a) + (color[2] * (1f - a));
+
+            color[0] = outR;
+            color[1] = outG;
+            color[2] = outB;
+            this.surface.setColor(x, y, color);
         }
     }
 

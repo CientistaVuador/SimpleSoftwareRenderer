@@ -27,6 +27,7 @@
 package cientistavuador.simplesoftwarerenderer.render;
 
 import java.util.Arrays;
+import java.util.concurrent.atomic.AtomicIntegerArray;
 
 /**
  *
@@ -40,8 +41,8 @@ public class Surface {
     private final int width;
     private final int height;
 
-    private float[] colorBuffer;
-    private float[] depthBuffer;
+    private final float[] colorBuffer;
+    private final float[] depthBuffer;
 
     private final Texture colorBufferTexture;
     private final Texture depthBufferTexture;
@@ -51,6 +52,8 @@ public class Surface {
         this.height = height;
         this.colorBuffer = new float[width * height * 3];
         this.depthBuffer = new float[width * height];
+        int[] atomicArray = new int[width * height];
+        Arrays.fill(atomicArray, -1);
         this.colorBufferTexture = new Texture() {
             @Override
             public int width() {
@@ -131,7 +134,7 @@ public class Surface {
     public float getDepth(int x, int y) {
         return this.depthBuffer[x + (y * getWidth())];
     }
-
+    
     public void clearColor(float r, float g, float b) {
         for (int x = 0; x < getWidth(); x++) {
             for (int y = 0; y < getHeight(); y++) {

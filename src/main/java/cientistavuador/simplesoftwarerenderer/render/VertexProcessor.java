@@ -26,9 +26,7 @@
  */
 package cientistavuador.simplesoftwarerenderer.render;
 
-import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.List;
 import org.joml.Matrix3f;
 import org.joml.Matrix3fc;
 import org.joml.Matrix4f;
