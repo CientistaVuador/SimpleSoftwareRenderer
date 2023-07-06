@@ -59,8 +59,8 @@ public class Renderer {
     private boolean multithreadEnabled = true;
 
     private final Vector3f lightDirection = new Vector3f(-1f, -1f, -1f).normalize();
-    private final Vector3f lightDiffuse = new Vector3f(0.8f, 0.8f, 0.8f);
-    private final Vector3f lightAmbient = new Vector3f(0.2f, 0.2f, 0.2f);
+    private final Vector3f lightDiffuse = new Vector3f(0.8f, 0.75f, 0.70f);
+    private final Vector3f lightAmbient = new Vector3f(0.3f, 0.3f, 0.3f);
     private Texture texture = null;
 
     private Renderer(Surface frontSurface, Surface backSurface) {

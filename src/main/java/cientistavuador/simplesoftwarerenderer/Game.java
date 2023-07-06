@@ -12,6 +12,7 @@ import cientistavuador.simplesoftwarerenderer.camera.FreeCamera;
 import cientistavuador.simplesoftwarerenderer.render.AWTInterop;
 import cientistavuador.simplesoftwarerenderer.render.Renderer;
 import cientistavuador.simplesoftwarerenderer.render.Surface;
+import cientistavuador.simplesoftwarerenderer.render.Texture;
 import cientistavuador.simplesoftwarerenderer.resources.ImageResources;
 import java.awt.Font;
 import java.awt.image.BufferedImage;
@@ -62,23 +63,35 @@ public class Game {
         }
     }, "Image-Thread");
 
+    private final float[] cottageVertices;
+    private final Texture cottageTexture;
+    private final Matrix4f cottageStaticMatrix = new Matrix4f()
+            .translate(34f, 17.7f, 62f)
+            .scale(0.5f)
+            .rotateY((float) Math.toRadians(90f))
+            ;
+    
+    private final Matrix4f cottageRotatingMatrix = new Matrix4f();
+
+    private final float[] terrainVertices;
+    private final Texture terrainTexture;
+    private final Matrix4f terrainMatrix = new Matrix4f()
+            .scale(256f, 128f, 256f)
+            ;
+
     private Game() {
         //load 3d model, texture and model matrix
-        loadCottage();
-        this.renderer.setTexture(this.renderer.imageToTexture(ImageResources.read("cottage_diffuse.png")));
-        this.renderer.setModel(
-                new Matrix4f()
-                        .translate(0f, -2f, -7f)
-                        .scale(0.25f)
-                        .rotateY((float) Math.toRadians(45f))
-        );
+        this.cottageVertices = loadModel("cottage.obj");
+        this.terrainVertices = loadModel("terrain.obj");
+        this.cottageTexture = this.renderer.imageToTexture(ImageResources.read("cottage_diffuse.png"));
+        this.terrainTexture = this.renderer.imageToTexture(ImageResources.read("grass09.png"));
     }
 
-    private void loadCottage() {
+    private float[] loadModel(String name) {
         try (BufferedReader reader
                 = new BufferedReader(
                         new InputStreamReader(
-                                ImageResources.class.getResourceAsStream("cottage.obj"),
+                                ImageResources.class.getResourceAsStream(name),
                                 StandardCharsets.UTF_8
                         )
                 )) {
@@ -123,14 +136,15 @@ public class Game {
 
             }
 
-            this.renderer.finishVerticesAndSet();
+            return this.renderer.finishVertices();
         } catch (IOException ex) {
             throw new RuntimeException(ex);
         }
     }
 
     public void start() {
-        camera.setPosition(0, 0, 1f);
+        camera.setPosition(49.22f, 23.03f, 60.11f);
+        camera.setRotation(0f, -180f, 0f);
         Thread currentThread = Thread.currentThread();
         this.imageThread.setUncaughtExceptionHandler((t, e) -> {
             this.imageThreadException = e;
@@ -145,6 +159,15 @@ public class Game {
         if (this.imageThreadException != null) {
             throw new RuntimeException("Exception in Image Thread", this.imageThreadException);
         }
+        this.cottageRotatingMatrix
+                .identity()
+                .translate(40f, 19f, 52f)
+                .scale(0.1f)
+                .rotateY((float) Math.toRadians(this.rotation));
+        this.rotation += Main.TPF * 12f;
+        if (this.rotation > 360f) {
+            this.rotation = 0f;
+        }
 
         camera.updateMovement();
 
@@ -155,30 +178,32 @@ public class Game {
 
         this.renderer.setProjectionView(new Matrix4f(this.camera.getProjectionView()));
 
+        //terain
+        this.renderer.setVertices(this.terrainVertices);
+        this.renderer.setModel(this.terrainMatrix);
+        this.renderer.setTexture(this.terrainTexture);
+        
         int renderedVertices = this.renderer.render();
-
+        
         Main.NUMBER_OF_VERTICES += renderedVertices;
         Main.NUMBER_OF_DRAWCALLS++;
-
-        Matrix4f otherModel = this.renderer.getModel();
-
-        this.renderer.setModel(
-                new Matrix4f()
-                        .translate(-6f, -2f, -1f)
-                        .scale(0.05f)
-                        .rotateY((float) Math.toRadians(this.rotation))
-        );
-        this.rotation += Main.TPF * 12f;
-        if (this.rotation > 360f) {
-            this.rotation = 0f;
-        }
+        
+        //cottage
+        this.renderer.setVertices(this.cottageVertices);
+        this.renderer.setModel(this.cottageStaticMatrix);
+        this.renderer.setTexture(this.cottageTexture);
 
         renderedVertices = this.renderer.render();
 
         Main.NUMBER_OF_VERTICES += renderedVertices;
         Main.NUMBER_OF_DRAWCALLS++;
 
-        this.renderer.setModel(otherModel);
+        this.renderer.setModel(this.cottageRotatingMatrix);
+        
+        renderedVertices = this.renderer.render();
+
+        Main.NUMBER_OF_VERTICES += renderedVertices;
+        Main.NUMBER_OF_DRAWCALLS++;
 
         try {
             BufferedImage e = (BufferedImage) this.imageThreadExchanger.exchange(this.renderer.getSurface());
