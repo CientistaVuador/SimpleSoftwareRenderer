@@ -66,9 +66,9 @@ public class Game {
     private final float[] cottageVertices;
     private final Texture cottageTexture;
     private final Matrix4f cottageStaticMatrix = new Matrix4f()
-            .translate(34f, 17.7f, 62f)
+            .translate(82.61f, 59.5f, -30.05f)
             .scale(0.5f)
-            .rotateY((float) Math.toRadians(90f))
+            .rotateY((float) Math.toRadians(45f))
             ;
     
     private final Matrix4f cottageRotatingMatrix = new Matrix4f();
@@ -76,7 +76,7 @@ public class Game {
     private final float[] terrainVertices;
     private final Texture terrainTexture;
     private final Matrix4f terrainMatrix = new Matrix4f()
-            .scale(256f, 128f, 256f)
+            .scale(512f)
             ;
 
     private Game() {
@@ -143,7 +143,7 @@ public class Game {
     }
 
     public void start() {
-        camera.setPosition(49.22f, 23.03f, 60.11f);
+        camera.setPosition(103.17f, 68.80f, -21.42f);
         camera.setRotation(0f, -180f, 0f);
         Thread currentThread = Thread.currentThread();
         this.imageThread.setUncaughtExceptionHandler((t, e) -> {
@@ -161,7 +161,7 @@ public class Game {
         }
         this.cottageRotatingMatrix
                 .identity()
-                .translate(40f, 19f, 52f)
+                .translate(83.70f, 61f, -6.82f)
                 .scale(0.1f)
                 .rotateY((float) Math.toRadians(this.rotation));
         this.rotation += Main.TPF * 12f;

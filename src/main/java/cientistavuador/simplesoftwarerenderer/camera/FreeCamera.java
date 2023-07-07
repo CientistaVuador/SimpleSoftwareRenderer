@@ -35,7 +35,7 @@ import cientistavuador.simplesoftwarerenderer.Main;
 public class FreeCamera extends PerspectiveCamera {
 
     public static final float DEFAULT_SENSITIVITY = 0.1f;
-    public static final float DEFAULT_RUN_SPEED = 10f;
+    public static final float DEFAULT_RUN_SPEED = 20f;
     public static final float DEFAULT_SPEED = 5f;
 
     private float sensitivity = DEFAULT_SENSITIVITY;
