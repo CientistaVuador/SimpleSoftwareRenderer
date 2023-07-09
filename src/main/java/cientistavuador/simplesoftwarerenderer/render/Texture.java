@@ -36,8 +36,8 @@ public interface Texture {
     public default void sampleNearest(float x, float y, float[] result, int offset) {
         int width = width();
         int height = height();
-        int pX = (Math.round(Math.abs(x) * width) % width);
-        int pY = (Math.round(Math.abs(y) * height) % height);
+        int pX = (((int)Math.floor(Math.abs(x) * width)) % width);
+        int pY = (((int)Math.floor(Math.abs(y) * height)) % height);
         fetch(pX, pY, result, offset);
     }
     public default void sampleBilinear(float x, float y, float[] result, int offset) {

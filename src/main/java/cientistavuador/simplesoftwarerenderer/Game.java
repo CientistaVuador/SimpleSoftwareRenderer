@@ -21,9 +21,8 @@ import java.io.IOException;
 import java.io.InputStreamReader;
 import java.nio.charset.StandardCharsets;
 import java.util.concurrent.Exchanger;
-import java.util.logging.Level;
-import java.util.logging.Logger;
 import org.joml.Matrix4f;
+import org.joml.Vector3f;
 
 /**
  *
@@ -65,26 +64,30 @@ public class Game {
 
     private final float[] cottageVertices;
     private final Texture cottageTexture;
-    private final Matrix4f cottageStaticMatrix = new Matrix4f()
+    private final Matrix4f cottageMatrix = new Matrix4f()
             .translate(82.61f, 59.5f, -30.05f)
             .scale(0.5f)
             .rotateY((float) Math.toRadians(45f))
             ;
-    
-    private final Matrix4f cottageRotatingMatrix = new Matrix4f();
 
     private final float[] terrainVertices;
     private final Texture terrainTexture;
     private final Matrix4f terrainMatrix = new Matrix4f()
             .scale(512f)
             ;
-
+    
+    private final float[] colaVertices;
+    private final Texture colaTexture;
+    private final Matrix4f colaMatrix = new Matrix4f();
+    
     private Game() {
         //load 3d model, texture and model matrix
         this.cottageVertices = loadModel("cottage.obj");
         this.terrainVertices = loadModel("terrain.obj");
+        this.colaVertices = loadModel("ciencola.obj");
         this.cottageTexture = this.renderer.imageToTexture(ImageResources.read("cottage_diffuse.png"));
         this.terrainTexture = this.renderer.imageToTexture(ImageResources.read("grass09.png"));
+        this.colaTexture = this.renderer.imageToTexture(ImageResources.read("ciencola_diffuse.png"));
     }
 
     private float[] loadModel(String name) {
@@ -159,16 +162,17 @@ public class Game {
         if (this.imageThreadException != null) {
             throw new RuntimeException("Exception in Image Thread", this.imageThreadException);
         }
-        this.cottageRotatingMatrix
+        this.colaMatrix
                 .identity()
-                .translate(83.70f, 61f, -6.82f)
-                .scale(0.1f)
-                .rotateY((float) Math.toRadians(this.rotation));
-        this.rotation += Main.TPF * 12f;
+                .translate(83.70f, 62f + Math.abs((this.rotation / 720f) - 0.25f), -6.82f)
+                .rotateY((float) Math.toRadians(this.rotation))
+                .rotateX((float) Math.toRadians(25f))
+                ;
+        this.rotation += Main.TPF * 30f;
         if (this.rotation > 360f) {
             this.rotation = 0f;
         }
-
+        
         camera.updateMovement();
 
         g.setColor(Color.BLACK);
@@ -176,11 +180,13 @@ public class Game {
 
         this.renderer.clearBuffers();
 
-        this.renderer.setProjectionView(new Matrix4f(this.camera.getProjectionView()));
-
-        //terain
+        this.renderer.getProjection().set(this.camera.getProjection());
+        this.renderer.getView().set(this.camera.getView());
+        this.renderer.getCameraPosition().set(this.camera.getPosition());
+        
+        //terrain
         this.renderer.setVertices(this.terrainVertices);
-        this.renderer.setModel(this.terrainMatrix);
+        this.renderer.getModel().set(this.terrainMatrix);
         this.renderer.setTexture(this.terrainTexture);
         
         int renderedVertices = this.renderer.render();
@@ -190,18 +196,21 @@ public class Game {
         
         //cottage
         this.renderer.setVertices(this.cottageVertices);
-        this.renderer.setModel(this.cottageStaticMatrix);
+        this.renderer.getModel().set(this.cottageMatrix);
         this.renderer.setTexture(this.cottageTexture);
 
         renderedVertices = this.renderer.render();
 
         Main.NUMBER_OF_VERTICES += renderedVertices;
         Main.NUMBER_OF_DRAWCALLS++;
-
-        this.renderer.setModel(this.cottageRotatingMatrix);
+        
+        //cola
+        this.renderer.setVertices(this.colaVertices);
+        this.renderer.getModel().set(this.colaMatrix);
+        this.renderer.setTexture(this.colaTexture);
         
         renderedVertices = this.renderer.render();
-
+        
         Main.NUMBER_OF_VERTICES += renderedVertices;
         Main.NUMBER_OF_DRAWCALLS++;
 

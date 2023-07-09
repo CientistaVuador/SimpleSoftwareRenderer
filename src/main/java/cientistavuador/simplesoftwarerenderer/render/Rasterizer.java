@@ -26,6 +26,7 @@
  */
 package cientistavuador.simplesoftwarerenderer.render;
 
+import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
@@ -46,6 +47,8 @@ public class Rasterizer {
     private final boolean depthOnly;
     private final boolean bilinear;
     private final boolean multithread;
+    private final Vector3fc cameraPosition;
+    private final List<Light> lights;
 
     private final class RasterizerVertex {
 
@@ -88,7 +91,7 @@ public class Rasterizer {
         }
     }
 
-    public Rasterizer(Surface surface, Texture texture, float[] vertices, Vector3fc lightDirection, Vector3fc lightDiffuse, Vector3fc lightAmbient, boolean depthOnly, boolean bilinear, boolean multithread) {
+    public Rasterizer(Surface surface, Texture texture, float[] vertices, Vector3fc lightDirection, Vector3fc lightDiffuse, Vector3fc lightAmbient, boolean depthOnly, boolean bilinear, boolean multithread, Vector3fc cameraPosition, List<Light> lights) {
         this.surface = surface;
         this.texture = texture;
         this.vertices = vertices;
@@ -98,6 +101,8 @@ public class Rasterizer {
         this.depthOnly = depthOnly;
         this.bilinear = bilinear;
         this.multithread = multithread;
+        this.cameraPosition = cameraPosition;
+        this.lights = lights;
     }
 
     public Vector3fc getLightDirection() {
@@ -132,6 +137,14 @@ public class Rasterizer {
         return bilinear;
     }
 
+    public Vector3fc getCameraPosition() {
+        return cameraPosition;
+    }
+
+    public List<Light> getLights() {
+        return lights;
+    }
+    
     public void render() {
         int width = this.surface.getWidth();
         int height = this.surface.getHeight();

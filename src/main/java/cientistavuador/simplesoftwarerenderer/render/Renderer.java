@@ -27,8 +27,12 @@
 package cientistavuador.simplesoftwarerenderer.render;
 
 import java.awt.image.BufferedImage;
+import java.util.ArrayList;
+import java.util.List;
 import org.joml.Matrix4f;
+import org.joml.Matrix4fc;
 import org.joml.Vector3f;
+import org.joml.Vector3fc;
 
 /**
  *
@@ -44,25 +48,41 @@ public class Renderer {
         return create(Surface.DEFAULT_WIDTH, Surface.DEFAULT_HEIGHT);
     }
 
+    //surface
     private Surface frontSurface;
     private Surface backSurface;
 
-    //state
-    private float clearDepth = 1f;
-    private final Vector3f clearColor = new Vector3f(0.2f, 0.4f, 0.6f);
+    //vertex builder
     private VertexBuilder builder = null;
-    private float[] vertices = null;
-    private Matrix4f projectionView = null;
-    private Matrix4f model = null;
+    
+    //surface state
+    private final Vector3f clearColor = new Vector3f(0.2f, 0.4f, 0.6f);
+    private float clearDepth = 1f;
+    
+    //rasterizer/processor state
     private boolean depthOnlyEnabled = false;
     private boolean bilinearFilteringEnabled = false;
     private boolean multithreadEnabled = true;
-
-    private final Vector3f lightDirection = new Vector3f(-1f, -1f, -1f).normalize();
-    private final Vector3f lightDiffuse = new Vector3f(0.8f, 0.75f, 0.70f);
-    private final Vector3f lightAmbient = new Vector3f(0.3f, 0.3f, 0.3f);
+    private boolean billboardingEnabled = false;
+    
+    //sun state
+    private final Vector3f sunDirection = new Vector3f(-1f, -1f, -1f).normalize();
+    private final Vector3f sunDiffuse = new Vector3f(0.8f, 0.75f, 0.70f);
+    private final Vector3f sunAmbient = new Vector3f(0.3f, 0.3f, 0.3f);
+    
+    //lights state
+    private final List<Light> lights = new ArrayList<>();
+    
+    //camera state
+    private final Matrix4f projection = new Matrix4f();
+    private final Matrix4f view = new Matrix4f();
+    private final Vector3f cameraPosition = new Vector3f();
+    
+    //object state
+    private float[] vertices = null;
+    private final Matrix4f model = new Matrix4f();
     private Texture texture = null;
-
+    
     private Renderer(Surface frontSurface, Surface backSurface) {
         this.frontSurface = frontSurface;
         this.backSurface = backSurface;
@@ -179,22 +199,30 @@ public class Renderer {
         this.vertices = vertices;
     }
 
-    public Matrix4f getProjectionView() {
-        return projectionView;
+    public Matrix4f getProjection() {
+        return projection;
+    }
+    
+    public Matrix4f getView() {
+        return view;
     }
 
-    public void setProjectionView(Matrix4f projectionView) {
-        this.projectionView = projectionView;
+    public Vector3f getCameraPosition() {
+        return cameraPosition;
     }
-
+    
     public Matrix4f getModel() {
         return model;
     }
-
-    public void setModel(Matrix4f model) {
-        this.model = model;
+    
+    public boolean isBillboardingEnabled() {
+        return billboardingEnabled;
     }
 
+    public void setBillboardingEnabled(boolean billboardingEnabled) {
+        this.billboardingEnabled = billboardingEnabled;
+    }
+    
     //rasterizer
     public void setTexture(Texture texture) {
         this.texture = texture;
@@ -204,16 +232,16 @@ public class Renderer {
         return texture;
     }
 
-    public Vector3f getLightDirection() {
-        return lightDirection;
+    public Vector3f getSunDirection() {
+        return sunDirection;
     }
 
-    public Vector3f getLightDiffuse() {
-        return lightDiffuse;
+    public Vector3f getSunDiffuse() {
+        return sunDiffuse;
     }
 
-    public Vector3f getLightAmbient() {
-        return lightAmbient;
+    public Vector3f getSunAmbient() {
+        return sunAmbient;
     }
 
     public boolean isDepthOnlyEnabled() {
@@ -245,19 +273,28 @@ public class Renderer {
         if (this.vertices == null || this.vertices.length == 0) {
             return 0;
         }
-        VertexProcessor processor = new VertexProcessor(this.vertices, this.projectionView, this.model);
+        VertexProcessor processor = new VertexProcessor(
+                this.vertices,
+                this.projection,
+                this.view,
+                this.cameraPosition,
+                this.model,
+                this.billboardingEnabled
+        );
         float[] processed = processor.process();
-
+        
         Rasterizer rasterizer = new Rasterizer(
                 this.frontSurface,
                 this.texture,
                 processed,
-                this.lightDirection,
-                this.lightDiffuse,
-                this.lightAmbient,
+                this.sunDirection,
+                this.sunDiffuse,
+                this.sunAmbient,
                 this.depthOnlyEnabled,
                 this.bilinearFilteringEnabled,
-                this.multithreadEnabled
+                this.multithreadEnabled,
+                this.cameraPosition,
+                this.lights
         );
         rasterizer.render();
 
