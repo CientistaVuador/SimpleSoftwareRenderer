@@ -24,9 +24,9 @@
  *
  * For more information, please refer to <https://unlicense.org>
  */
-package cientistavuador.simplesoftwarerenderer.render;
+package cientistavuador.softwarerenderer.render;
 
-import cientistavuador.simplesoftwarerenderer.util.Pixels;
+import cientistavuador.softwarerenderer.util.Pixels;
 import java.awt.image.BufferedImage;
 
 /**

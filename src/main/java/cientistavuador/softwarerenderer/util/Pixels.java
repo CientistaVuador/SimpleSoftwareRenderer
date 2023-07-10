@@ -24,7 +24,7 @@
  *
  * For more information, please refer to <https://unlicense.org>
  */
-package cientistavuador.simplesoftwarerenderer.util;
+package cientistavuador.softwarerenderer.util;
 
 /**
  * old code from an old project.

@@ -24,7 +24,7 @@
  *
  * For more information, please refer to <https://unlicense.org>
  */
-package cientistavuador.simplesoftwarerenderer.render;
+package cientistavuador.softwarerenderer.render;
 
 import org.joml.Vector3f;
 
@@ -33,7 +33,8 @@ import org.joml.Vector3f;
  * @author Cien
  */
 public interface Light {
-    public Vector3f diffuseColor();
-    public Vector3f ambientColor();
-    public Vector3f position();
+    public Vector3f getDiffuseColor();
+    public Vector3f getAmbientColor();
+    public Vector3f getPosition();
+    public void calculateDiffuseAmbientFactors(float x, float y, float z, float nx, float ny, float nz, float[] diffuseAmbientFactors);
 }

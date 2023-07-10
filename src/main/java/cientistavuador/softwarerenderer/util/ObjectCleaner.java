@@ -24,38 +24,23 @@
  *
  * For more information, please refer to <https://unlicense.org>
  */
-package cientistavuador.simplesoftwarerenderer.resources;
+package cientistavuador.softwarerenderer.util;
 
-import java.awt.image.BufferedImage;
-import java.io.IOException;
-import java.net.URL;
-import javax.imageio.ImageIO;
+import java.lang.ref.Cleaner;
 
 /**
  *
  * @author Cien
  */
-public class ImageResources {
+public class ObjectCleaner {
     
-    public static BufferedImage read(String name) {
-        URL url = ImageResources.getImageURL(name);
-
-        if (url == null) {
-            throw new NullPointerException("'" + name + "' not found.");
-        }
-        
-        try {
-            return ImageIO.read(url);
-        } catch (IOException ex) {
-            throw new RuntimeException(ex);
-        }
+    private static final Cleaner INSTANCE = Cleaner.create();
+    
+    public static Cleaner get() {
+        return INSTANCE;
     }
     
-    public static URL getImageURL(String name) {
-        return ImageResources.class.getResource(name);
-    }
-    
-    private ImageResources() {
+    private ObjectCleaner() {
         
     }
 }

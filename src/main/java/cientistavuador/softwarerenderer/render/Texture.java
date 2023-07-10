@@ -24,7 +24,7 @@
  *
  * For more information, please refer to <https://unlicense.org>
  */
-package cientistavuador.simplesoftwarerenderer.render;
+package cientistavuador.softwarerenderer.render;
 
 /**
  *
@@ -44,8 +44,8 @@ public interface Texture {
         int width = width();
         int height = height();
         
-        float pX = Math.abs(x) * width;
-        float pY = Math.abs(y) * height;
+        float pX = Math.abs((x * width) - 0.5f);
+        float pY = Math.abs((y * height) - 0.5f);
         
         int bottomLeftX = (int) Math.floor(pX);
         int bottomLeftY = (int) Math.floor(pY);

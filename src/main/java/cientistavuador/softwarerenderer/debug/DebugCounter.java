@@ -24,7 +24,7 @@
  *
  * For more information, please refer to <https://unlicense.org>
  */
-package cientistavuador.simplesoftwarerenderer.debug;
+package cientistavuador.softwarerenderer.debug;
 
 import java.io.PrintStream;
 import java.util.ArrayList;

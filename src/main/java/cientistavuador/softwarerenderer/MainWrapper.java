@@ -24,7 +24,7 @@
  *
  * For more information, please refer to <https://unlicense.org>
  */
-package cientistavuador.simplesoftwarerenderer;
+package cientistavuador.softwarerenderer;
 
 import java.io.ByteArrayOutputStream;
 import java.io.PrintStream;

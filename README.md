@@ -1,4 +1,4 @@
-# SimpleSoftwareRenderer
+# SoftwareRenderer
 
 Experimenting with software rendering.
 

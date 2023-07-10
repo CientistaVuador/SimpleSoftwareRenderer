@@ -24,9 +24,9 @@
  *
  * For more information, please refer to <https://unlicense.org>
  */
-package cientistavuador.simplesoftwarerenderer.camera;
+package cientistavuador.softwarerenderer.camera;
 
-import static cientistavuador.simplesoftwarerenderer.camera.Camera.DEFAULT_WORLD_UP;
+import static cientistavuador.softwarerenderer.camera.Camera.DEFAULT_WORLD_UP;
 import org.joml.Matrix4d;
 import org.joml.Matrix4dc;
 import org.joml.Matrix4f;

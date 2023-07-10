@@ -24,7 +24,7 @@
  *
  * For more information, please refer to <https://unlicense.org>
  */
-package cientistavuador.simplesoftwarerenderer.camera;
+package cientistavuador.softwarerenderer.camera;
 
 import org.joml.Matrix4dc;
 import org.joml.Matrix4fc;

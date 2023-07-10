@@ -24,7 +24,7 @@
  *
  * For more information, please refer to <https://unlicense.org>
  */
-package cientistavuador.simplesoftwarerenderer.render;
+package cientistavuador.softwarerenderer.render;
 
 import java.util.Arrays;
 

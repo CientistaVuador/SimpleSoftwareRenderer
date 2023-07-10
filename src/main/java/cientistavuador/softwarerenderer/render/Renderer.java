@@ -24,15 +24,14 @@
  *
  * For more information, please refer to <https://unlicense.org>
  */
-package cientistavuador.simplesoftwarerenderer.render;
+package cientistavuador.softwarerenderer.render;
 
 import java.awt.image.BufferedImage;
 import java.util.ArrayList;
 import java.util.List;
 import org.joml.Matrix4f;
-import org.joml.Matrix4fc;
 import org.joml.Vector3f;
-import org.joml.Vector3fc;
+import org.joml.Vector4f;
 
 /**
  *
@@ -64,6 +63,7 @@ public class Renderer {
     private boolean bilinearFilteringEnabled = false;
     private boolean multithreadEnabled = true;
     private boolean billboardingEnabled = false;
+    private boolean lightingEnabled = true;
     
     //sun state
     private final Vector3f sunDirection = new Vector3f(-1f, -1f, -1f).normalize();
@@ -82,6 +82,7 @@ public class Renderer {
     private float[] vertices = null;
     private final Matrix4f model = new Matrix4f();
     private Texture texture = null;
+    private final Vector4f color = new Vector4f(1f, 1f, 1f, 1f);
     
     private Renderer(Surface frontSurface, Surface backSurface) {
         this.frontSurface = frontSurface;
@@ -268,6 +269,22 @@ public class Renderer {
         this.multithreadEnabled = multithreadEnabled;
     }
 
+    public List<Light> getLights() {
+        return lights;
+    }
+
+    public Vector4f getColor() {
+        return color;
+    }
+
+    public boolean isLightingEnabled() {
+        return lightingEnabled;
+    }
+
+    public void setLightingEnabled(boolean lightingEnabled) {
+        this.lightingEnabled = lightingEnabled;
+    }
+
     //render
     public int render() {
         if (this.vertices == null || this.vertices.length == 0) {
@@ -293,8 +310,9 @@ public class Renderer {
                 this.depthOnlyEnabled,
                 this.bilinearFilteringEnabled,
                 this.multithreadEnabled,
-                this.cameraPosition,
-                this.lights
+                this.lights,
+                this.color,
+                this.lightingEnabled
         );
         rasterizer.render();
 

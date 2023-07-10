@@ -3,17 +3,20 @@
  * To change this template file, choose Tools | Templates
  * and open the template in the editor.
  */
-package cientistavuador.simplesoftwarerenderer;
+package cientistavuador.softwarerenderer;
 
 import java.awt.Color;
 import java.awt.Graphics2D;
 import java.awt.event.KeyEvent;
-import cientistavuador.simplesoftwarerenderer.camera.FreeCamera;
-import cientistavuador.simplesoftwarerenderer.render.AWTInterop;
-import cientistavuador.simplesoftwarerenderer.render.Renderer;
-import cientistavuador.simplesoftwarerenderer.render.Surface;
-import cientistavuador.simplesoftwarerenderer.render.Texture;
-import cientistavuador.simplesoftwarerenderer.resources.ImageResources;
+import cientistavuador.softwarerenderer.camera.FreeCamera;
+import cientistavuador.softwarerenderer.render.AWTInterop;
+import cientistavuador.softwarerenderer.render.Light;
+import cientistavuador.softwarerenderer.render.PointLight;
+import cientistavuador.softwarerenderer.render.Renderer;
+import cientistavuador.softwarerenderer.render.SpotLight;
+import cientistavuador.softwarerenderer.render.Surface;
+import cientistavuador.softwarerenderer.render.Texture;
+import cientistavuador.softwarerenderer.resources.ImageResources;
 import java.awt.Font;
 import java.awt.image.BufferedImage;
 import java.io.BufferedReader;
@@ -67,27 +70,37 @@ public class Game {
     private final Matrix4f cottageMatrix = new Matrix4f()
             .translate(82.61f, 59.5f, -30.05f)
             .scale(0.5f)
-            .rotateY((float) Math.toRadians(45f))
-            ;
+            .rotateY((float) Math.toRadians(45f));
 
     private final float[] terrainVertices;
     private final Texture terrainTexture;
     private final Matrix4f terrainMatrix = new Matrix4f()
-            .scale(512f)
-            ;
-    
+            .scale(512f);
+
     private final float[] colaVertices;
     private final Texture colaTexture;
     private final Matrix4f colaMatrix = new Matrix4f();
-    
+
+    private final float[] lightIconVertices;
+    private final Texture pointLightIcon;
+    private final Texture spotLightIcon;
+    private final Texture lightColorIcon;
+
+    private boolean lightingEnabled = true;
+    private boolean terrainEnabled = true;
+
     private Game() {
         //load 3d model, texture and model matrix
         this.cottageVertices = loadModel("cottage.obj");
         this.terrainVertices = loadModel("terrain.obj");
         this.colaVertices = loadModel("ciencola.obj");
+        this.lightIconVertices = loadModel("billboard.obj");
         this.cottageTexture = this.renderer.imageToTexture(ImageResources.read("cottage_diffuse.png"));
         this.terrainTexture = this.renderer.imageToTexture(ImageResources.read("grass09.png"));
         this.colaTexture = this.renderer.imageToTexture(ImageResources.read("ciencola_diffuse.png"));
+        this.pointLightIcon = this.renderer.imageToTexture(ImageResources.read("pointlight.png"));
+        this.spotLightIcon = this.renderer.imageToTexture(ImageResources.read("spotlight.png"));
+        this.lightColorIcon = this.renderer.imageToTexture(ImageResources.read("lightcolor.png"));
     }
 
     private float[] loadModel(String name) {
@@ -156,6 +169,20 @@ public class Game {
         this.imageThread.setDaemon(true);
         this.imageThread.start();
         this.renderer.setBilinearFilteringEnabled(false);
+
+        this.renderer.getSunDiffuse().set(0.7f, 0.65f, 0.60f);
+
+        SpotLight spot = new SpotLight();
+        spot.getDiffuseColor().set(4f, 0.5f, 0.0f);
+        spot.getAmbientColor().set(spot.getDiffuseColor()).mul(0.05f);
+        spot.getPosition().set(83.70f, 65f, -6.82f);
+        this.renderer.getLights().add(spot);
+
+        PointLight point = new PointLight();
+        point.getDiffuseColor().set(0.0f, 2f, 0.5f);
+        point.getAmbientColor().set(point.getDiffuseColor()).mul(0.05f);
+        point.getPosition().set(75.64f, 64.56f, -22.29f);
+        this.renderer.getLights().add(point);
     }
 
     public void loop(Graphics2D g) {
@@ -166,13 +193,12 @@ public class Game {
                 .identity()
                 .translate(83.70f, 62f + Math.abs((this.rotation / 720f) - 0.25f), -6.82f)
                 .rotateY((float) Math.toRadians(this.rotation))
-                .rotateX((float) Math.toRadians(25f))
-                ;
+                .rotateX((float) Math.toRadians(25f));
         this.rotation += Main.TPF * 30f;
         if (this.rotation > 360f) {
             this.rotation = 0f;
         }
-        
+
         camera.updateMovement();
 
         g.setColor(Color.BLACK);
@@ -183,16 +209,22 @@ public class Game {
         this.renderer.getProjection().set(this.camera.getProjection());
         this.renderer.getView().set(this.camera.getView());
         this.renderer.getCameraPosition().set(this.camera.getPosition());
+
+        this.renderer.setLightingEnabled(this.lightingEnabled);
+        
+        int renderedVertices = 0;
         
         //terrain
-        this.renderer.setVertices(this.terrainVertices);
-        this.renderer.getModel().set(this.terrainMatrix);
-        this.renderer.setTexture(this.terrainTexture);
-        
-        int renderedVertices = this.renderer.render();
-        
-        Main.NUMBER_OF_VERTICES += renderedVertices;
-        Main.NUMBER_OF_DRAWCALLS++;
+        if (this.terrainEnabled) {
+            this.renderer.setVertices(this.terrainVertices);
+            this.renderer.getModel().set(this.terrainMatrix);
+            this.renderer.setTexture(this.terrainTexture);
+            
+            renderedVertices = this.renderer.render();
+            
+            Main.NUMBER_OF_VERTICES += renderedVertices;
+            Main.NUMBER_OF_DRAWCALLS++;
+        }
         
         //cottage
         this.renderer.setVertices(this.cottageVertices);
@@ -203,16 +235,55 @@ public class Game {
 
         Main.NUMBER_OF_VERTICES += renderedVertices;
         Main.NUMBER_OF_DRAWCALLS++;
-        
+
         //cola
         this.renderer.setVertices(this.colaVertices);
         this.renderer.getModel().set(this.colaMatrix);
         this.renderer.setTexture(this.colaTexture);
-        
+
         renderedVertices = this.renderer.render();
-        
+
         Main.NUMBER_OF_VERTICES += renderedVertices;
         Main.NUMBER_OF_DRAWCALLS++;
+
+        if (this.lightingEnabled) {
+            //lights
+            this.renderer.setVertices(this.lightIconVertices);
+            this.renderer.setBillboardingEnabled(true);
+            this.renderer.setLightingEnabled(false);
+            for (Light light : this.renderer.getLights()) {
+                this.renderer.getModel().identity().translate(light.getPosition());
+                
+                //icon
+                if (light instanceof SpotLight) {
+                    this.renderer.setTexture(this.spotLightIcon);
+                } else {
+                    this.renderer.setTexture(this.pointLightIcon);
+                }
+                renderedVertices = this.renderer.render();
+                
+                //overlay
+                float lightR = light.getDiffuseColor().x();
+                float lightG = light.getDiffuseColor().y();
+                float lightB = light.getDiffuseColor().z();
+                float largest = Math.max(Math.max(lightR, lightG), lightB);
+                if (largest > 1f) {
+                    lightR /= largest;
+                    lightG /= largest;
+                    lightB /= largest;
+                }
+                this.renderer.getColor().set(lightR, lightG, lightB, 1f);
+                this.renderer.setTexture(this.lightColorIcon);
+                renderedVertices += this.renderer.render();
+
+                Main.NUMBER_OF_VERTICES += renderedVertices;
+                Main.NUMBER_OF_DRAWCALLS += 2;
+
+                this.renderer.getColor().set(1f);
+            }
+            this.renderer.setBillboardingEnabled(false);
+            this.renderer.setLightingEnabled(true);
+        }
 
         try {
             BufferedImage e = (BufferedImage) this.imageThreadExchanger.exchange(this.renderer.getSurface());
@@ -246,7 +317,9 @@ public class Game {
                 "  T - Hide This Wall of Text.",
                 "  M - Multithread [" + (this.renderer.isMultithreadEnabled() ? "Enabled" : "Disabled") + "]",
                 "  B - Bilinear Filtering [" + (this.renderer.isBilinearFilteringEnabled() ? "Enabled" : "Disabled") + "]",
-                "  R - Resolution [" + this.renderer.getWidth() + "x" + this.renderer.getHeight() + "]"
+                "  R - Resolution [" + this.renderer.getWidth() + "x" + this.renderer.getHeight() + "]",
+                "  L - Lighting [" + (this.lightingEnabled ? "Enabled" : "Disabled") + "]",
+                "  N - Terrain [" + (this.terrainEnabled ? "Enabled" : "Disabled") + "]"
             };
 
             int offset = SMALL_FONT.getSize();
@@ -315,6 +388,12 @@ public class Game {
                     this.renderer.resize(100, 75);
                 }
             }
+        }
+        if (e.getKeyCode() == KeyEvent.VK_L && pressed) {
+            this.lightingEnabled = !this.lightingEnabled;
+        }
+        if (e.getKeyCode() == KeyEvent.VK_N && pressed) {
+            this.terrainEnabled = !this.terrainEnabled;
         }
     }
 
