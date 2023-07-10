@@ -88,7 +88,13 @@ public class Game {
 
     private boolean lightingEnabled = true;
     private boolean terrainEnabled = true;
-
+    
+    private final SpotLight colaLight = new SpotLight();
+    private final PointLight doorLight = new PointLight();
+    
+    private final SpotLight flashlight = new SpotLight();
+    private boolean flashlightEnabled = false;
+    
     private Game() {
         //load 3d model, texture and model matrix
         this.cottageVertices = loadModel("cottage.obj");
@@ -172,17 +178,18 @@ public class Game {
 
         this.renderer.getSunDiffuse().set(0.7f, 0.65f, 0.60f);
 
-        SpotLight spot = new SpotLight();
-        spot.getDiffuseColor().set(4f, 0.5f, 0.0f);
-        spot.getAmbientColor().set(spot.getDiffuseColor()).mul(0.05f);
-        spot.getPosition().set(83.70f, 65f, -6.82f);
-        this.renderer.getLights().add(spot);
+        this.colaLight.getDiffuseColor().set(4f, 0.5f, 0.0f);
+        this.colaLight.getAmbientColor().set(this.colaLight.getDiffuseColor()).mul(0.05f);
+        this.colaLight.getPosition().set(83.70f, 65f, -6.82f);
+        this.renderer.getLights().add(this.colaLight);
 
-        PointLight point = new PointLight();
-        point.getDiffuseColor().set(0.0f, 2f, 0.5f);
-        point.getAmbientColor().set(point.getDiffuseColor()).mul(0.05f);
-        point.getPosition().set(75.64f, 64.56f, -22.29f);
-        this.renderer.getLights().add(point);
+        this.doorLight.getDiffuseColor().set(0.0f, 2f, 0.5f);
+        this.doorLight.getAmbientColor().set(this.doorLight.getDiffuseColor()).mul(0.05f);
+        this.doorLight.getPosition().set(75.64f, 64.56f, -22.29f);
+        this.renderer.getLights().add(this.doorLight);
+        
+        this.flashlight.getDiffuseColor().set(1.25f);
+        this.flashlight.getAmbientColor().set(this.flashlight.getDiffuseColor()).mul(0.2f);
     }
 
     public void loop(Graphics2D g) {
@@ -200,6 +207,9 @@ public class Game {
         }
 
         camera.updateMovement();
+        
+        this.flashlight.getPosition().set(this.camera.getPosition());
+        this.flashlight.getDirection().set(this.camera.getFront());
 
         g.setColor(Color.BLACK);
         g.fillRect(0, 0, 800, 600);
@@ -302,7 +312,7 @@ public class Game {
         if (this.textEnabled) {
             g.setFont(BIG_FONT);
             g.setColor(Color.YELLOW);
-            g.drawString("SimpleSoftwareRenderer", 0, BIG_FONT.getSize());
+            g.drawString("SoftwareRenderer", 0, BIG_FONT.getSize());
 
             String[] wallOfText = {
                 "FPS: " + Main.FPS,
@@ -319,9 +329,11 @@ public class Game {
                 "  B - Bilinear Filtering [" + (this.renderer.isBilinearFilteringEnabled() ? "Enabled" : "Disabled") + "]",
                 "  R - Resolution [" + this.renderer.getWidth() + "x" + this.renderer.getHeight() + "]",
                 "  L - Lighting [" + (this.lightingEnabled ? "Enabled" : "Disabled") + "]",
-                "  N - Terrain [" + (this.terrainEnabled ? "Enabled" : "Disabled") + "]"
+                "  N - Terrain [" + (this.terrainEnabled ? "Enabled" : "Disabled") + "]",
+                "  F - Flashlight [" + (this.flashlightEnabled ? "Enabled" : "Disabled") + "]",
+                "  U - Sun [" + (this.renderer.isSunEnabled() ? "Enabled" : "Disabled") + "]"
             };
-
+            
             int offset = SMALL_FONT.getSize();
             int offsetBig = BIG_FONT.getSize();
             g.setFont(SMALL_FONT);
@@ -394,6 +406,18 @@ public class Game {
         }
         if (e.getKeyCode() == KeyEvent.VK_N && pressed) {
             this.terrainEnabled = !this.terrainEnabled;
+        }
+        if (e.getKeyCode() == KeyEvent.VK_F && pressed) {
+            this.flashlightEnabled = !this.flashlightEnabled;
+            
+            if (this.flashlightEnabled) {
+                this.renderer.getLights().add(this.flashlight);
+            } else {
+                this.renderer.getLights().remove(this.flashlight);
+            }
+        }
+        if (e.getKeyCode() == KeyEvent.VK_U && pressed) {
+            this.renderer.setSunEnabled(!this.renderer.isSunEnabled());
         }
     }
 

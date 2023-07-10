@@ -51,6 +51,7 @@ public class Rasterizer {
     private final List<Light> lights;
     private final Vector4fc color;
     private final boolean lightingEnabled;
+    private final boolean sunEnabled;
 
     private final class RasterizerVertex {
 
@@ -93,7 +94,7 @@ public class Rasterizer {
         }
     }
 
-    public Rasterizer(Surface surface, Texture texture, float[] vertices, Vector3fc lightDirection, Vector3fc lightDiffuse, Vector3fc lightAmbient, boolean depthOnly, boolean bilinear, boolean multithread, List<Light> lights, Vector4fc color, boolean lightingEnabled) {
+    public Rasterizer(Surface surface, Texture texture, float[] vertices, Vector3fc lightDirection, Vector3fc lightDiffuse, Vector3fc lightAmbient, boolean depthOnly, boolean bilinear, boolean multithread, List<Light> lights, Vector4fc color, boolean lightingEnabled, boolean sunEnabled) {
         this.surface = surface;
         this.texture = texture;
         this.vertices = vertices;
@@ -106,6 +107,7 @@ public class Rasterizer {
         this.lights = lights;
         this.color = color;
         this.lightingEnabled = lightingEnabled;
+        this.sunEnabled = sunEnabled;
     }
 
     public Vector3fc getLightDirection() {
@@ -146,6 +148,10 @@ public class Rasterizer {
 
     public Vector4fc getColor() {
         return color;
+    }
+
+    public boolean isSunEnabled() {
+        return sunEnabled;
     }
 
     public void render() {
@@ -264,11 +270,7 @@ public class Rasterizer {
                 ca *= textureColor[3];
             }
 
-            if (this.lightingEnabled) {
-                float worldx = ((wv0 * v0.x) + (wv1 * v1.x) + (wv2 * v2.x)) * w;
-                float worldy = ((wv0 * v0.y) + (wv1 * v1.y) + (wv2 * v2.y)) * w;
-                float worldz = ((wv0 * v0.z) + (wv1 * v1.z) + (wv2 * v2.z)) * w;
-
+            if (this.lightingEnabled && (!this.lights.isEmpty() || this.sunEnabled)) {
                 float nx = ((wv0 * v0.nx) + (wv1 * v1.nx) + (wv2 * v2.nx)) * w;
                 float ny = ((wv0 * v0.ny) + (wv1 * v1.ny) + (wv2 * v2.ny)) * w;
                 float nz = ((wv0 * v0.nz) + (wv1 * v1.nz) + (wv2 * v2.nz)) * w;
@@ -276,31 +278,43 @@ public class Rasterizer {
                 nx *= lengthinv;
                 ny *= lengthinv;
                 nz *= lengthinv;
-                
-                float r = lightAmbient.x() * cr;
-                float g = lightAmbient.y() * cg;
-                float b = lightAmbient.z() * cb;
-                
-                float diffuse = Math.max((nx * -lightDirection.x()) + (ny * -lightDirection.y()) + (nz * -lightDirection.z()), 0f);
 
-                r += lightDiffuse.x() * diffuse * cr;
-                g += lightDiffuse.y() * diffuse * cg;
-                b += lightDiffuse.z() * diffuse * cb;
+                float r = 0f;
+                float g = 0f;
+                float b = 0f;
 
-                for (Light light : this.lights) {
-                    if (light != null) {
-                        light.calculateDiffuseAmbientFactors(worldx, worldy, worldz, nx, ny, nz, diffuseAmbientFactors);
+                if (this.sunEnabled) {
+                    r += lightAmbient.x() * cr;
+                    g += lightAmbient.y() * cg;
+                    b += lightAmbient.z() * cb;
 
-                        r += diffuseAmbientFactors[0] * light.getDiffuseColor().x() * cr;
-                        g += diffuseAmbientFactors[0] * light.getDiffuseColor().y() * cg;
-                        b += diffuseAmbientFactors[0] * light.getDiffuseColor().z() * cb;
+                    float diffuse = Math.max((nx * -lightDirection.x()) + (ny * -lightDirection.y()) + (nz * -lightDirection.z()), 0f);
 
-                        r += diffuseAmbientFactors[1] * light.getAmbientColor().x() * cr;
-                        g += diffuseAmbientFactors[1] * light.getAmbientColor().y() * cg;
-                        b += diffuseAmbientFactors[1] * light.getAmbientColor().z() * cb;
+                    r += lightDiffuse.x() * diffuse * cr;
+                    g += lightDiffuse.y() * diffuse * cg;
+                    b += lightDiffuse.z() * diffuse * cb;
+                }
+
+                if (!this.lights.isEmpty()) {
+                    float worldx = ((wv0 * v0.x) + (wv1 * v1.x) + (wv2 * v2.x)) * w;
+                    float worldy = ((wv0 * v0.y) + (wv1 * v1.y) + (wv2 * v2.y)) * w;
+                    float worldz = ((wv0 * v0.z) + (wv1 * v1.z) + (wv2 * v2.z)) * w;
+
+                    for (Light light : this.lights) {
+                        if (light != null) {
+                            light.calculateDiffuseAmbientFactors(worldx, worldy, worldz, nx, ny, nz, diffuseAmbientFactors);
+
+                            r += diffuseAmbientFactors[0] * light.getDiffuseColor().x() * cr;
+                            g += diffuseAmbientFactors[0] * light.getDiffuseColor().y() * cg;
+                            b += diffuseAmbientFactors[0] * light.getDiffuseColor().z() * cb;
+
+                            r += diffuseAmbientFactors[1] * light.getAmbientColor().x() * cr;
+                            g += diffuseAmbientFactors[1] * light.getAmbientColor().y() * cg;
+                            b += diffuseAmbientFactors[1] * light.getAmbientColor().z() * cb;
+                        }
                     }
                 }
-                
+
                 cr = r;
                 cg = g;
                 cb = b;

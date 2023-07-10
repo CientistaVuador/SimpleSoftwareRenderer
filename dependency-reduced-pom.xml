@@ -2,7 +2,7 @@
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
   <modelVersion>4.0.0</modelVersion>
   <groupId>cientistavuador</groupId>
-  <artifactId>SimpleSoftwareRenderer</artifactId>
+  <artifactId>SoftwareRenderer</artifactId>
   <version>1.0</version>
   <build>
     <resources>
@@ -58,7 +58,7 @@
     </dependencies>
   </dependencyManagement>
   <properties>
-    <exec.mainClass>cientistavuador.simplesoftwarerenderer.MainWrapper</exec.mainClass>
+    <exec.mainClass>cientistavuador.softwarerenderer.MainWrapper</exec.mainClass>
     <maven.compiler.source>17</maven.compiler.source>
     <lwjgl.natives>natives-windows</lwjgl.natives>
     <joml.version>1.10.5</joml.version>

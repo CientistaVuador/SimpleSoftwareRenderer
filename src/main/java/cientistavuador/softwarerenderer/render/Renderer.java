@@ -64,6 +64,7 @@ public class Renderer {
     private boolean multithreadEnabled = true;
     private boolean billboardingEnabled = false;
     private boolean lightingEnabled = true;
+    private boolean sunEnabled = true;
     
     //sun state
     private final Vector3f sunDirection = new Vector3f(-1f, -1f, -1f).normalize();
@@ -285,6 +286,14 @@ public class Renderer {
         this.lightingEnabled = lightingEnabled;
     }
 
+    public boolean isSunEnabled() {
+        return sunEnabled;
+    }
+
+    public void setSunEnabled(boolean sunEnabled) {
+        this.sunEnabled = sunEnabled;
+    }
+    
     //render
     public int render() {
         if (this.vertices == null || this.vertices.length == 0) {
@@ -312,7 +321,8 @@ public class Renderer {
                 this.multithreadEnabled,
                 this.lights,
                 this.color,
-                this.lightingEnabled
+                this.lightingEnabled,
+                this.sunEnabled
         );
         rasterizer.render();
 

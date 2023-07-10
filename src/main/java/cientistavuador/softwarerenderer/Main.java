@@ -245,8 +245,8 @@ public class Main {
 
             Main.NUMBER_OF_DRAWCALLS = 0;
             Main.NUMBER_OF_VERTICES = 0;
-            Main.WINDOW_TITLE = "SimpleSoftwareRenderer - FPS: " + Main.FPS;
-
+            Main.WINDOW_TITLE = "SoftwareRenderer - FPS: " + Main.FPS;
+            
             if (SPIKE_LAG_WARNINGS) {
                 int tpfFps = (int) (1.0 / Main.TPF);
                 if (tpfFps < 60 && ((Main.FPS - tpfFps) > 30)) {
