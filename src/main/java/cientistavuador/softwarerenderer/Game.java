@@ -19,13 +19,15 @@ import cientistavuador.softwarerenderer.resources.ImageResources;
 import java.awt.Font;
 import java.awt.image.BufferedImage;
 import java.io.BufferedReader;
+import java.io.File;
 import java.io.IOException;
 import java.io.InputStreamReader;
+import java.io.UncheckedIOException;
 import java.nio.charset.StandardCharsets;
-import java.util.Base64;
 import java.util.concurrent.Exchanger;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+import javax.imageio.ImageIO;
 import org.joml.Matrix4f;
 
 /**
@@ -95,6 +97,9 @@ public class Game {
     
     private final SpotLight flashlight = new SpotLight();
     private boolean flashlightEnabled = false;
+    
+    private boolean saveColorBuffer = false;
+    private boolean saveDepthBuffer = false;
     
     private Game() {
         //load 3d model, texture and model matrix
@@ -166,6 +171,8 @@ public class Game {
     }
 
     public void start() {
+        this.renderer.getClearColor().set(0.2f, 0.4f, 0.6f, 1f);
+        
         camera.setPosition(103.17f, 68.80f, -21.42f);
         camera.setRotation(0f, -180f, 0f);
         Thread currentThread = Thread.currentThread();
@@ -295,6 +302,24 @@ public class Game {
             this.renderer.setBillboardingEnabled(false);
             this.renderer.setLightingEnabled(true);
         }
+        
+        if (this.saveColorBuffer) {
+            this.saveColorBuffer = false;
+            try {
+                ImageIO.write(this.renderer.colorBufferToImage(), "PNG", new File("color_buffer.png"));
+            } catch (IOException ex) {
+                throw new UncheckedIOException(ex);
+            }
+        }
+        
+        if (this.saveDepthBuffer) {
+            this.saveDepthBuffer = false;
+            try {
+                ImageIO.write(this.renderer.depthBufferToImage(), "PNG", new File("depth_buffer.png"));
+            } catch (IOException ex) {
+                throw new UncheckedIOException(ex);
+            }
+        }
 
         try {
             BufferedImage e = (BufferedImage) this.imageThreadExchanger.exchange(this.renderer.getSurface());
@@ -332,7 +357,9 @@ public class Game {
                 "  L - Lighting [" + (this.lightingEnabled ? "Enabled" : "Disabled") + "]",
                 "  N - Terrain [" + (this.terrainEnabled ? "Enabled" : "Disabled") + "]",
                 "  F - Flashlight [" + (this.flashlightEnabled ? "Enabled" : "Disabled") + "]",
-                "  U - Sun [" + (this.renderer.isSunEnabled() ? "Enabled" : "Disabled") + "]"
+                "  U - Sun [" + (this.renderer.isSunEnabled() ? "Enabled" : "Disabled") + "]",
+                "  C - Save Color Buffer to 'color_buffer.png'",
+                "  P - Save Depth Buffer to 'depth_buffer.png'"
             };
             
             int offset = SMALL_FONT.getSize();
@@ -419,6 +446,12 @@ public class Game {
         }
         if (e.getKeyCode() == KeyEvent.VK_U && pressed) {
             this.renderer.setSunEnabled(!this.renderer.isSunEnabled());
+        }
+        if (e.getKeyCode() == KeyEvent.VK_C && pressed) {
+            this.saveColorBuffer = true;
+        }
+        if (e.getKeyCode() == KeyEvent.VK_P && pressed) {
+            this.saveDepthBuffer = true;
         }
     }
 

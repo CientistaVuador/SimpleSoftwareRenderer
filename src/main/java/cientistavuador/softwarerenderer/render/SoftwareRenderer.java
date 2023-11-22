@@ -45,7 +45,7 @@ import org.joml.Vector4fc;
  * @author Cien
  */
 public class SoftwareRenderer {
-    
+
     //camera position, world position, uv, world normal, color
     private static final int VERTEX_SIZE = 4 + 3 + 2 + 3 + 4;
 
@@ -155,7 +155,7 @@ public class SoftwareRenderer {
         public Surface(int width, int height) {
             this.width = width;
             this.height = height;
-            this.colorBuffer = new float[width * height * 3];
+            this.colorBuffer = new float[width * height * 4];
             this.depthBuffer = new float[width * height];
             int[] atomicArray = new int[width * height];
             Arrays.fill(atomicArray, -1);
@@ -172,10 +172,10 @@ public class SoftwareRenderer {
 
                 @Override
                 public void fetch(int x, int y, float[] result, int offset) {
-                    result[offset + 0] = Surface.this.colorBuffer[((x + (y * width())) * 3) + 0];
-                    result[offset + 1] = Surface.this.colorBuffer[((x + (y * width())) * 3) + 1];
-                    result[offset + 2] = Surface.this.colorBuffer[((x + (y * width())) * 3) + 2];
-                    result[offset + 3] = 1f;
+                    result[offset + 0] = Surface.this.colorBuffer[((x + (y * width())) * 4) + 0];
+                    result[offset + 1] = Surface.this.colorBuffer[((x + (y * width())) * 4) + 1];
+                    result[offset + 2] = Surface.this.colorBuffer[((x + (y * width())) * 4) + 2];
+                    result[offset + 3] = Surface.this.colorBuffer[((x + (y * width())) * 4) + 3];
                 }
             };
             this.depthBufferTexture = new Texture() {
@@ -220,14 +220,15 @@ public class SoftwareRenderer {
             return depthBufferTexture;
         }
 
-        public void setColor(int x, int y, float[] rgb) {
-            this.colorBuffer[((x + (y * getWidth())) * 3) + 0] = rgb[0];
-            this.colorBuffer[((x + (y * getWidth())) * 3) + 1] = rgb[1];
-            this.colorBuffer[((x + (y * getWidth())) * 3) + 2] = rgb[2];
+        public void setColor(int x, int y, float[] rgba) {
+            this.colorBuffer[((x + (y * getWidth())) * 4) + 0] = rgba[0];
+            this.colorBuffer[((x + (y * getWidth())) * 4) + 1] = rgba[1];
+            this.colorBuffer[((x + (y * getWidth())) * 4) + 2] = rgba[2];
+            this.colorBuffer[((x + (y * getWidth())) * 4) + 2] = rgba[3];
         }
 
-        public void setColor(int x, int y, float[] rgbArray, int offset, int length) {
-            System.arraycopy(rgbArray, offset, this.colorBuffer, (x + (y * getWidth())) * 3, length);
+        public void setColor(int x, int y, float[] rgbaArray, int offset, int length) {
+            System.arraycopy(rgbaArray, offset, this.colorBuffer, (x + (y * getWidth())) * 4, length);
         }
 
         public void setDepth(int x, int y, float depth) {
@@ -238,14 +239,15 @@ public class SoftwareRenderer {
             System.arraycopy(depthArray, offset, this.depthBuffer, x + (y * getWidth()), length);
         }
 
-        public void getColor(int x, int y, float[] rgb) {
-            rgb[0] = this.colorBuffer[((x + (y * getWidth())) * 3) + 0];
-            rgb[1] = this.colorBuffer[((x + (y * getWidth())) * 3) + 1];
-            rgb[2] = this.colorBuffer[((x + (y * getWidth())) * 3) + 2];
+        public void getColor(int x, int y, float[] rgba) {
+            rgba[0] = this.colorBuffer[((x + (y * getWidth())) * 4) + 0];
+            rgba[1] = this.colorBuffer[((x + (y * getWidth())) * 4) + 1];
+            rgba[2] = this.colorBuffer[((x + (y * getWidth())) * 4) + 2];
+            rgba[3] = this.colorBuffer[((x + (y * getWidth())) * 4) + 3];
         }
 
-        public void getColor(int x, int y, float[] rgbArray, int offset, int length) {
-            System.arraycopy(this.colorBuffer, (x + (y * getWidth())) * 3, rgbArray, offset, length);
+        public void getColor(int x, int y, float[] rgbaArray, int offset, int length) {
+            System.arraycopy(this.colorBuffer, (x + (y * getWidth())) * 4, rgbaArray, offset, length);
         }
 
         public float getDepth(int x, int y) {
@@ -256,12 +258,13 @@ public class SoftwareRenderer {
             System.arraycopy(this.depthBuffer, x + (y * getWidth()), depthArray, offset, length);
         }
 
-        public void clearColor(float r, float g, float b) {
+        public void clearColor(float r, float g, float b, float a) {
             for (int x = 0; x < getWidth(); x++) {
                 for (int y = 0; y < getHeight(); y++) {
-                    this.colorBuffer[((x + (y * getWidth())) * 3) + 0] = r;
-                    this.colorBuffer[((x + (y * getWidth())) * 3) + 1] = g;
-                    this.colorBuffer[((x + (y * getWidth())) * 3) + 2] = b;
+                    this.colorBuffer[((x + (y * getWidth())) * 4) + 0] = r;
+                    this.colorBuffer[((x + (y * getWidth())) * 4) + 1] = g;
+                    this.colorBuffer[((x + (y * getWidth())) * 4) + 2] = b;
+                    this.colorBuffer[((x + (y * getWidth())) * 4) + 3] = a;
                 }
             }
         }
@@ -270,7 +273,7 @@ public class SoftwareRenderer {
             Arrays.fill(this.depthBuffer, depth);
         }
     }
-    
+
     //awt interop
     public static Texture imageToTexture(BufferedImage image) {
         final int width = image.getWidth();
@@ -339,12 +342,12 @@ public class SoftwareRenderer {
 
     //vertex builder
     public static class MeshBuilder {
-        
+
         //local position, uv, normal, color
         private static final int LOCAL_VERTEX_SIZE = 3 + 2 + 3 + 4;
 
         public static final int VERTEX_SIZE = LOCAL_VERTEX_SIZE;
-        
+
         public static final int POS_X = 0;
         public static final int POS_Y = 1;
         public static final int POS_Z = 2;
@@ -357,7 +360,7 @@ public class SoftwareRenderer {
         public static final int CLR_G = 9;
         public static final int CLR_B = 10;
         public static final int CLR_A = 11;
-        
+
         private float[] positions = new float[64];
         private int positionsIndex = 0;
 
@@ -1076,7 +1079,7 @@ public class SoftwareRenderer {
         private void renderLine(float inverse, int y, int minX, int maxX, int v0, int v1, int v2) {
             float[] surfaceDepth = new float[maxX - minX];
             this.renderer.getSurface().getDepth(minX, y, surfaceDepth, 0, surfaceDepth.length);
-            float[] surfaceColor = new float[(maxX - minX) * 3];
+            float[] surfaceColor = new float[(maxX - minX) * 4];
             this.renderer.getSurface().getColor(minX, y, surfaceColor, 0, surfaceColor.length);
 
             float[] textureColor = new float[4];
@@ -1191,13 +1194,37 @@ public class SoftwareRenderer {
                     cb = b;
                 }
 
-                float outR = (cr * ca) + (surfaceColor[(pixelIndex * 3) + 0] * (1f - ca));
-                float outG = (cg * ca) + (surfaceColor[(pixelIndex * 3) + 1] * (1f - ca));
-                float outB = (cb * ca) + (surfaceColor[(pixelIndex * 3) + 2] * (1f - ca));
-
-                surfaceColor[(pixelIndex * 3) + 0] = outR;
-                surfaceColor[(pixelIndex * 3) + 1] = outG;
-                surfaceColor[(pixelIndex * 3) + 2] = outB;
+                float outR = 0.0f, outG = 0.0f, outB = 0.0f, outA;
+                calculateAlpha:
+                {
+                    float srcR = cr, srcG = cg, srcB = cb, srcA = ca;
+                    float dstA = surfaceColor[(pixelIndex * 4) + 3];
+                    if (dstA == 1f) {
+                        float dstR = surfaceColor[(pixelIndex * 4) + 0];
+                        float dstG = surfaceColor[(pixelIndex * 4) + 1];
+                        float dstB = surfaceColor[(pixelIndex * 4) + 2];
+                        outR = (srcR * srcA) + (dstR * (1f - srcA));
+                        outG = (srcG * srcA) + (dstG * (1f - srcA));
+                        outB = (srcB * srcA) + (dstB * (1f - srcA));
+                        outA = 1f;
+                        break calculateAlpha;
+                    }
+                    outA = srcA + dstA * (1f - srcA);
+                    if (outA == 0f) {
+                        break calculateAlpha;
+                    }
+                    float dstR = surfaceColor[(pixelIndex * 4) + 0];
+                    float dstG = surfaceColor[(pixelIndex * 4) + 1];
+                    float dstB = surfaceColor[(pixelIndex * 4) + 2];
+                    float invOutA = 1f / outA;
+                    outR = (srcR * srcA + dstR * dstA * (1f - srcA)) * invOutA;
+                    outG = (srcG * srcA + dstG * dstA * (1f - srcA)) * invOutA;
+                    outB = (srcB * srcA + dstB * dstA * (1f - srcA)) * invOutA;
+                }
+                surfaceColor[(pixelIndex * 4) + 0] = outR;
+                surfaceColor[(pixelIndex * 4) + 1] = outG;
+                surfaceColor[(pixelIndex * 4) + 2] = outB;
+                surfaceColor[(pixelIndex * 4) + 3] = outA;
             }
 
             this.renderer.getSurface().setDepth(minX, y, surfaceDepth, 0, surfaceDepth.length);
@@ -1205,7 +1232,7 @@ public class SoftwareRenderer {
         }
 
     }
-    
+
     //surface
     private Surface frontSurface;
     private Surface backSurface;
@@ -1214,7 +1241,7 @@ public class SoftwareRenderer {
     private MeshBuilder builder = null;
 
     //surface state
-    private final Vector3f clearColor = new Vector3f(0.2f, 0.4f, 0.6f);
+    private final Vector4f clearColor = new Vector4f(0.2f, 0.4f, 0.6f, 1f);
     private float clearDepth = 1f;
 
     //rasterizer/processor state
@@ -1258,6 +1285,14 @@ public class SoftwareRenderer {
         return this.frontSurface;
     }
 
+    public Surface getFrontSurface() {
+        return frontSurface;
+    }
+
+    public Surface getBackSurface() {
+        return backSurface;
+    }
+
     public float getClearDepth() {
         return clearDepth;
     }
@@ -1266,13 +1301,13 @@ public class SoftwareRenderer {
         this.clearDepth = clearDepth;
     }
 
-    public Vector3f getClearColor() {
+    public Vector4f getClearColor() {
         return clearColor;
     }
 
     public void clearBuffers() {
         this.frontSurface.clearDepth(this.clearDepth);
-        this.frontSurface.clearColor(this.clearColor.x(), this.clearColor.y(), this.clearColor.z());
+        this.frontSurface.clearColor(this.clearColor.x(), this.clearColor.y(), this.clearColor.z(), this.clearColor.w());
     }
 
     public void resize(int width, int height) {
@@ -1422,7 +1457,7 @@ public class SoftwareRenderer {
 
     public void setMultithreadEnabled(boolean multithreadEnabled) {
         if (this.multithreadEnabled && !multithreadEnabled) {
-            
+
         }
         this.multithreadEnabled = multithreadEnabled;
     }
@@ -1450,7 +1485,7 @@ public class SoftwareRenderer {
     public void setSunEnabled(boolean sunEnabled) {
         this.sunEnabled = sunEnabled;
     }
-    
+
     //render
     public int render() {
         if (this.vertices == null || this.vertices.length == 0) {
