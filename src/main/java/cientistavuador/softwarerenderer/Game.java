@@ -24,7 +24,10 @@ import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.UncheckedIOException;
 import java.nio.charset.StandardCharsets;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Exchanger;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.Future;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import javax.imageio.ImageIO;
@@ -91,28 +94,30 @@ public class Game {
 
     private boolean lightingEnabled = true;
     private boolean terrainEnabled = true;
-    
+
     private final SpotLight colaLight = new SpotLight();
     private final PointLight doorLight = new PointLight();
-    
+
     private final SpotLight flashlight = new SpotLight();
     private boolean flashlightEnabled = false;
-    
+
     private boolean saveColorBuffer = false;
     private boolean saveDepthBuffer = false;
-    
+
+    private final SoftwareRenderer offscreenRenderer = new SoftwareRenderer(75, 100);
+
     private Game() {
         //load 3d model, texture and model matrix
         this.cottageVertices = loadModel("cottage.obj");
         this.terrainVertices = loadModel("terrain.obj");
         this.colaVertices = loadModel("ciencola.obj");
         this.lightIconVertices = loadModel("billboard.obj");
-        this.cottageTexture = SoftwareRenderer.imageToTexture(ImageResources.read("cottage_diffuse.png"));
-        this.terrainTexture = SoftwareRenderer.imageToTexture(ImageResources.read("grass09.png"));
-        this.colaTexture = SoftwareRenderer.imageToTexture(ImageResources.read("ciencola_diffuse.png"));
-        this.pointLightIcon = SoftwareRenderer.imageToTexture(ImageResources.read("pointlight.png"));
-        this.spotLightIcon = SoftwareRenderer.imageToTexture(ImageResources.read("spotlight.png"));
-        this.lightColorIcon = SoftwareRenderer.imageToTexture(ImageResources.read("lightcolor.png"));
+        this.cottageTexture = SoftwareRenderer.wrapImageToTexture(ImageResources.read("cottage_diffuse.png"));
+        this.terrainTexture = SoftwareRenderer.wrapImageToTexture(ImageResources.read("grass09.png"));
+        this.colaTexture = SoftwareRenderer.wrapImageToTexture(ImageResources.read("ciencola_diffuse.png"));
+        this.pointLightIcon = SoftwareRenderer.wrapImageToTexture(ImageResources.read("pointlight.png"));
+        this.spotLightIcon = SoftwareRenderer.wrapImageToTexture(ImageResources.read("spotlight.png"));
+        this.lightColorIcon = SoftwareRenderer.wrapImageToTexture(ImageResources.read("lightcolor.png"));
     }
 
     private float[] loadModel(String name) {
@@ -172,7 +177,7 @@ public class Game {
 
     public void start() {
         this.renderer.getClearColor().set(0.2f, 0.4f, 0.6f, 1f);
-        
+
         camera.setPosition(103.17f, 68.80f, -21.42f);
         camera.setRotation(0f, -180f, 0f);
         Thread currentThread = Thread.currentThread();
@@ -195,7 +200,7 @@ public class Game {
         this.doorLight.getAmbientColor().set(this.doorLight.getDiffuseColor()).mul(0.05f);
         this.doorLight.getPosition().set(75.64f, 64.56f, -22.29f);
         this.renderer.getLights().add(this.doorLight);
-        
+
         this.flashlight.getDiffuseColor().set(1.25f);
         this.flashlight.getAmbientColor().set(this.flashlight.getDiffuseColor()).mul(0.2f);
     }
@@ -204,6 +209,24 @@ public class Game {
         if (this.imageThreadException != null) {
             throw new RuntimeException("Exception in Image Thread", this.imageThreadException);
         }
+
+        //offscreen rendering
+        Future<Texture> offscreenResult = CompletableFuture.supplyAsync(() -> {
+            this.offscreenRenderer.getClearColor().set(0.1f, 0.1f, 0.1f, 0.5f);
+            this.offscreenRenderer.clearBuffers();
+            this.offscreenRenderer.setMesh(this.colaVertices);
+            this.offscreenRenderer.setTexture(this.colaTexture);
+            this.offscreenRenderer.getProjection().identity().perspective(90f, 800f / 600f, 0.01f, 100f);
+            this.offscreenRenderer.getView().identity();
+            this.offscreenRenderer.getCameraPosition().set(0f, 0f, 1.1f);
+            this.offscreenRenderer.getModel()
+                    .identity()
+                    .rotateY((float) Math.toRadians(this.rotation))
+                    .rotateX((float) Math.toRadians(25f));
+            this.offscreenRenderer.render();
+            return this.offscreenRenderer.colorBuffer();
+        });
+
         this.colaMatrix
                 .identity()
                 .translate(83.70f, 62f + Math.abs((this.rotation / 720f) - 0.25f), -6.82f)
@@ -215,7 +238,7 @@ public class Game {
         }
 
         camera.updateMovement();
-        
+
         this.flashlight.getPosition().set(this.camera.getPosition());
         this.flashlight.getDirection().set(this.camera.getFront());
 
@@ -229,21 +252,21 @@ public class Game {
         this.renderer.getCameraPosition().set(this.camera.getPosition());
 
         this.renderer.setLightingEnabled(this.lightingEnabled);
-        
+
         int renderedVertices = 0;
-        
+
         //terrain
         if (this.terrainEnabled) {
             this.renderer.setMesh(this.terrainVertices);
             this.renderer.getModel().set(this.terrainMatrix);
             this.renderer.setTexture(this.terrainTexture);
-            
+
             renderedVertices = this.renderer.render();
-            
+
             Main.NUMBER_OF_VERTICES += renderedVertices;
             Main.NUMBER_OF_DRAWCALLS++;
         }
-        
+
         //cottage
         this.renderer.setMesh(this.cottageVertices);
         this.renderer.getModel().set(this.cottageMatrix);
@@ -271,7 +294,7 @@ public class Game {
             this.renderer.setLightingEnabled(false);
             for (Light light : this.renderer.getLights()) {
                 this.renderer.getModel().identity().translate(light.getPosition());
-                
+
                 //icon
                 if (light instanceof SpotLight) {
                     this.renderer.setTexture(this.spotLightIcon);
@@ -279,7 +302,7 @@ public class Game {
                     this.renderer.setTexture(this.pointLightIcon);
                 }
                 renderedVertices = this.renderer.render();
-                
+
                 //overlay
                 float lightR = light.getDiffuseColor().x();
                 float lightG = light.getDiffuseColor().y();
@@ -302,7 +325,26 @@ public class Game {
             this.renderer.setBillboardingEnabled(false);
             this.renderer.setLightingEnabled(true);
         }
-        
+
+        //render offscreen renderer quad
+        this.renderer.setMesh(this.lightIconVertices);
+        this.renderer.setBillboardingEnabled(true);
+        this.renderer.setLightingEnabled(false);
+        this.renderer
+                .getModel()
+                .identity()
+                .translate(90.17f, 61.80f, -21.42f)
+                .scale(4f);
+        try {
+            this.renderer.setTexture(offscreenResult.get());
+        } catch (InterruptedException | ExecutionException ex) {
+            throw new RuntimeException(ex);
+        }
+        Main.NUMBER_OF_VERTICES += this.renderer.render();
+        Main.NUMBER_OF_DRAWCALLS++;
+        this.renderer.setBillboardingEnabled(false);
+        this.renderer.setLightingEnabled(true);
+
         if (this.saveColorBuffer) {
             this.saveColorBuffer = false;
             try {
@@ -311,7 +353,7 @@ public class Game {
                 throw new UncheckedIOException(ex);
             }
         }
-        
+
         if (this.saveDepthBuffer) {
             this.saveDepthBuffer = false;
             try {
@@ -361,7 +403,7 @@ public class Game {
                 "  C - Save Color Buffer to 'color_buffer.png'",
                 "  P - Save Depth Buffer to 'depth_buffer.png'"
             };
-            
+
             int offset = SMALL_FONT.getSize();
             int offsetBig = BIG_FONT.getSize();
             g.setFont(SMALL_FONT);
@@ -437,7 +479,7 @@ public class Game {
         }
         if (e.getKeyCode() == KeyEvent.VK_F && pressed) {
             this.flashlightEnabled = !this.flashlightEnabled;
-            
+
             if (this.flashlightEnabled) {
                 this.renderer.getLights().add(this.flashlight);
             } else {

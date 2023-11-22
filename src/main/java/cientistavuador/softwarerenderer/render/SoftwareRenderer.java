@@ -157,8 +157,6 @@ public class SoftwareRenderer {
             this.height = height;
             this.colorBuffer = new float[width * height * 4];
             this.depthBuffer = new float[width * height];
-            int[] atomicArray = new int[width * height];
-            Arrays.fill(atomicArray, -1);
             this.colorBufferTexture = new Texture() {
                 @Override
                 public int width() {
@@ -275,6 +273,127 @@ public class SoftwareRenderer {
     }
 
     //awt interop
+    public static Texture wrapImageToTexture(BufferedImage image) {
+        return new Texture() {
+            private final BufferedImage wrapped = image;
+            
+            @Override
+            public int width() {
+                return this.wrapped.getWidth();
+            }
+
+            @Override
+            public int height() {
+                return this.wrapped.getHeight();
+            }
+
+            @Override
+            public void fetch(int x, int y, float[] result, int offset) {
+                int pixel = this.wrapped.getRGB(x, (height() - 1) - y);
+                result[offset + 0] = ((pixel >> 16) & 0xFF) / 255f;
+                result[offset + 1] = ((pixel >> 8) & 0xFF) / 255f;
+                result[offset + 2] = ((pixel >> 0) & 0xFF) / 255f;
+                result[offset + 3] = ((pixel >> 24) & 0xFF) / 255f;
+            }
+        };
+    }
+    
+    public static Texture imageTo16BitsTexture(BufferedImage image) {
+        final int width = image.getWidth();
+        final int height = image.getHeight();
+        final int[] bufferedData = image.getRGB(0, 0, width, height, null, 0, width);
+        final short[] pixelData = new short[width * height];
+        
+        for (int i = 0; i < width * height; i++) {
+            int x = i % width;
+            int y = i / width;
+            int imagePixel = bufferedData[x + (((height - 1) - y) * width)];
+            int rBits = (int) ((((imagePixel >> 16) & 0xFF) / 255f) * 15f);
+            int gBits = (int) ((((imagePixel >> 8) & 0xFF) / 255f) * 15f);
+            int bBits = (int) ((((imagePixel >> 0) & 0xFF) / 255f) * 15f);
+            int aBits = (int) ((((imagePixel >> 24) & 0xFF) / 255f) * 15f);
+            pixelData[i] = (short)((rBits << 12) | (gBits << 8) | (bBits << 4) | (aBits << 0));
+        }
+        
+        return new Texture() {
+            @Override
+            public int width() {
+                return width;
+            }
+
+            @Override
+            public int height() {
+                return height;
+            }
+
+            @Override
+            public void fetch(int x, int y, float[] result, int offset) {
+                int pixel = pixelData[x + (y * width())] & 0xFFFF;
+                float r = ((pixel >> 12) & 0x0F) / 15f;
+                float g = ((pixel >> 8) & 0x0F) / 15f;
+                float b = ((pixel >> 4) & 0x0F) / 15f;
+                float a = ((pixel >> 0) & 0x0F) / 15f;
+                result[offset + 0] = r;
+                result[offset + 1] = g;
+                result[offset + 2] = b;
+                result[offset + 3] = a;
+            }
+        };
+    }
+    
+    public static Texture imageTo256ColorsTexture(BufferedImage image) {
+        final int width = image.getWidth();
+        final int height = image.getHeight();
+        final int[] bufferedData = image.getRGB(0, 0, width, height, null, 0, width);
+        final byte[] pixelData = new byte[width * height];
+        
+        for (int i = 0; i < width * height; i++) {
+            int x = i % width;
+            int y = i / width;
+            int imagePixel = bufferedData[x + (((height - 1) - y) * width)];
+            float alpha = ((imagePixel >> 24) & 0xFF) / 255f;
+            int rBits = (int) ((((imagePixel >> 16) & 0xFF) / 255f) * 7f);
+            int gBits = (int) ((((imagePixel >> 8) & 0xFF) / 255f) * 7f);
+            int bBits = (int) ((((imagePixel >> 0) & 0xFF) / 255f) * 3f);
+            if (rBits == 0 && gBits == 0 && bBits == 0) {
+                rBits = 2;
+                gBits = 2;
+                bBits = 1;
+            }
+            if (alpha < 0.5f) {
+                rBits = 0;
+                gBits = 0;
+                bBits = 0;
+            }
+            pixelData[i] = (byte)((rBits << 5) | (gBits << 2) | (bBits << 0));
+        }
+        
+        return new Texture() {
+            @Override
+            public int width() {
+                return width;
+            }
+
+            @Override
+            public int height() {
+                return height;
+            }
+
+            @Override
+            public void fetch(int x, int y, float[] result, int offset) {
+                int pixel = pixelData[x + (y * width())] & 0xFF;
+                float r = ((pixel >> 5) & 0x07) / 7f;
+                float g = ((pixel >> 2) & 0x07) / 7f;
+                float b = ((pixel >> 0) & 0x03) / 3f;
+                float a = (r == 0f && g == 0f && b == 0f ? 0f : 1f);
+                result[offset + 0] = r;
+                result[offset + 1] = g;
+                result[offset + 2] = b;
+                result[offset + 3] = a;
+            }
+        };
+    }
+    
     public static Texture imageToTexture(BufferedImage image) {
         final int width = image.getWidth();
         final int height = image.getHeight();
