@@ -44,7 +44,6 @@ import java.util.concurrent.ConcurrentLinkedQueue;
 import javax.swing.JFrame;
 import javax.swing.SwingUtilities;
 import org.joml.Vector3f;
-import static org.lwjgl.system.MemoryUtil.*;
 
 /**
  * Main class
@@ -56,35 +55,7 @@ public class Main {
     public static final boolean USE_MSAA = false;
     public static final boolean DEBUG_ENABLED = true;
     public static final boolean SPIKE_LAG_WARNINGS = false;
-
-    static {
-        org.lwjgl.system.Configuration.LIBRARY_PATH.set("natives");
-    }
-
-    public static class OpenGLErrorException extends RuntimeException {
-
-        private static final long serialVersionUID = 1L;
-        private final int error;
-
-        public OpenGLErrorException(int error) {
-            super("OpenGL Error " + error);
-            this.error = error;
-        }
-
-        public int getError() {
-            return error;
-        }
-    }
-
-    public static class GLFWErrorException extends RuntimeException {
-
-        private static final long serialVersionUID = 1L;
-
-        public GLFWErrorException(String error) {
-            super(error);
-        }
-    }
-
+    
     public static boolean THROW_GL_GLFW_ERRORS = true;
 
     public static String WINDOW_TITLE = "CienCraft - FPS: 60";
@@ -92,7 +63,6 @@ public class Main {
     public static int HEIGHT = 600;
     public static double TPF = 1 / 60d;
     public static int FPS = 60;
-    public static long WINDOW_POINTER = NULL;
     public static long FRAME = 0;
     public static double ONE_SECOND_COUNTER = 0.0;
     public static double ONE_MINUTE_COUNTER = 0.0;

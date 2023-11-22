@@ -9,13 +9,12 @@ import java.awt.Color;
 import java.awt.Graphics2D;
 import java.awt.event.KeyEvent;
 import cientistavuador.softwarerenderer.camera.FreeCamera;
-import cientistavuador.softwarerenderer.render.AWTInterop;
-import cientistavuador.softwarerenderer.render.Light;
-import cientistavuador.softwarerenderer.render.PointLight;
-import cientistavuador.softwarerenderer.render.Renderer;
-import cientistavuador.softwarerenderer.render.SpotLight;
-import cientistavuador.softwarerenderer.render.Surface;
-import cientistavuador.softwarerenderer.render.Texture;
+import cientistavuador.softwarerenderer.render.SoftwareRenderer.Light;
+import cientistavuador.softwarerenderer.render.SoftwareRenderer.PointLight;
+import cientistavuador.softwarerenderer.render.SoftwareRenderer;
+import cientistavuador.softwarerenderer.render.SoftwareRenderer.SpotLight;
+import cientistavuador.softwarerenderer.render.SoftwareRenderer.Surface;
+import cientistavuador.softwarerenderer.render.SoftwareRenderer.Texture;
 import cientistavuador.softwarerenderer.resources.ImageResources;
 import java.awt.Font;
 import java.awt.image.BufferedImage;
@@ -23,9 +22,11 @@ import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.nio.charset.StandardCharsets;
+import java.util.Base64;
 import java.util.concurrent.Exchanger;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 import org.joml.Matrix4f;
-import org.joml.Vector3f;
 
 /**
  *
@@ -44,7 +45,7 @@ public class Game {
     private boolean textEnabled = true;
     private final FreeCamera camera = new FreeCamera();
 
-    private final Renderer renderer = Renderer.create(400, 300);
+    private final SoftwareRenderer renderer = new SoftwareRenderer(400, 300);
     private float rotation = 0f;
 
     private Throwable imageThreadException = null;
@@ -57,7 +58,7 @@ public class Game {
                     surface = (Surface) this.imageThreadExchanger.exchange(null);
                     continue;
                 }
-                BufferedImage result = AWTInterop.fromTexture(surface.getColorBufferTexture());
+                BufferedImage result = SoftwareRenderer.textureToImage(surface.getColorBufferTexture());
                 surface = (Surface) this.imageThreadExchanger.exchange(result);
             }
         } catch (Exception ex) {
@@ -101,12 +102,12 @@ public class Game {
         this.terrainVertices = loadModel("terrain.obj");
         this.colaVertices = loadModel("ciencola.obj");
         this.lightIconVertices = loadModel("billboard.obj");
-        this.cottageTexture = this.renderer.imageToTexture(ImageResources.read("cottage_diffuse.png"));
-        this.terrainTexture = this.renderer.imageToTexture(ImageResources.read("grass09.png"));
-        this.colaTexture = this.renderer.imageToTexture(ImageResources.read("ciencola_diffuse.png"));
-        this.pointLightIcon = this.renderer.imageToTexture(ImageResources.read("pointlight.png"));
-        this.spotLightIcon = this.renderer.imageToTexture(ImageResources.read("spotlight.png"));
-        this.lightColorIcon = this.renderer.imageToTexture(ImageResources.read("lightcolor.png"));
+        this.cottageTexture = SoftwareRenderer.imageToTexture(ImageResources.read("cottage_diffuse.png"));
+        this.terrainTexture = SoftwareRenderer.imageToTexture(ImageResources.read("grass09.png"));
+        this.colaTexture = SoftwareRenderer.imageToTexture(ImageResources.read("ciencola_diffuse.png"));
+        this.pointLightIcon = SoftwareRenderer.imageToTexture(ImageResources.read("pointlight.png"));
+        this.spotLightIcon = SoftwareRenderer.imageToTexture(ImageResources.read("spotlight.png"));
+        this.lightColorIcon = SoftwareRenderer.imageToTexture(ImageResources.read("lightcolor.png"));
     }
 
     private float[] loadModel(String name) {
@@ -118,7 +119,7 @@ public class Game {
                         )
                 )) {
 
-            this.renderer.beginVertices();
+            this.renderer.beginMesh();
 
             String s;
             while ((s = reader.readLine()) != null) {
@@ -158,7 +159,7 @@ public class Game {
 
             }
 
-            return this.renderer.finishVertices();
+            return this.renderer.finishMesh();
         } catch (IOException ex) {
             throw new RuntimeException(ex);
         }
@@ -226,7 +227,7 @@ public class Game {
         
         //terrain
         if (this.terrainEnabled) {
-            this.renderer.setVertices(this.terrainVertices);
+            this.renderer.setMesh(this.terrainVertices);
             this.renderer.getModel().set(this.terrainMatrix);
             this.renderer.setTexture(this.terrainTexture);
             
@@ -237,7 +238,7 @@ public class Game {
         }
         
         //cottage
-        this.renderer.setVertices(this.cottageVertices);
+        this.renderer.setMesh(this.cottageVertices);
         this.renderer.getModel().set(this.cottageMatrix);
         this.renderer.setTexture(this.cottageTexture);
 
@@ -247,7 +248,7 @@ public class Game {
         Main.NUMBER_OF_DRAWCALLS++;
 
         //cola
-        this.renderer.setVertices(this.colaVertices);
+        this.renderer.setMesh(this.colaVertices);
         this.renderer.getModel().set(this.colaMatrix);
         this.renderer.setTexture(this.colaTexture);
 
@@ -258,7 +259,7 @@ public class Game {
 
         if (this.lightingEnabled) {
             //lights
-            this.renderer.setVertices(this.lightIconVertices);
+            this.renderer.setMesh(this.lightIconVertices);
             this.renderer.setBillboardingEnabled(true);
             this.renderer.setLightingEnabled(false);
             for (Light light : this.renderer.getLights()) {
