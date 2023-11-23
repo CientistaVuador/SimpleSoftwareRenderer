@@ -276,7 +276,7 @@ public class SoftwareRenderer {
     public static Texture wrapImageToTexture(BufferedImage image) {
         return new Texture() {
             private final BufferedImage wrapped = image;
-            
+
             @Override
             public int width() {
                 return this.wrapped.getWidth();
@@ -297,13 +297,13 @@ public class SoftwareRenderer {
             }
         };
     }
-    
+
     public static Texture imageTo16BitsTexture(BufferedImage image) {
         final int width = image.getWidth();
         final int height = image.getHeight();
         final int[] bufferedData = image.getRGB(0, 0, width, height, null, 0, width);
         final short[] pixelData = new short[width * height];
-        
+
         for (int i = 0; i < width * height; i++) {
             int x = i % width;
             int y = i / width;
@@ -312,9 +312,9 @@ public class SoftwareRenderer {
             int gBits = (int) ((((imagePixel >> 8) & 0xFF) / 255f) * 15f);
             int bBits = (int) ((((imagePixel >> 0) & 0xFF) / 255f) * 15f);
             int aBits = (int) ((((imagePixel >> 24) & 0xFF) / 255f) * 15f);
-            pixelData[i] = (short)((rBits << 12) | (gBits << 8) | (bBits << 4) | (aBits << 0));
+            pixelData[i] = (short) ((rBits << 12) | (gBits << 8) | (bBits << 4) | (aBits << 0));
         }
-        
+
         return new Texture() {
             @Override
             public int width() {
@@ -340,13 +340,13 @@ public class SoftwareRenderer {
             }
         };
     }
-    
+
     public static Texture imageTo256ColorsTexture(BufferedImage image) {
         final int width = image.getWidth();
         final int height = image.getHeight();
         final int[] bufferedData = image.getRGB(0, 0, width, height, null, 0, width);
         final byte[] pixelData = new byte[width * height];
-        
+
         for (int i = 0; i < width * height; i++) {
             int x = i % width;
             int y = i / width;
@@ -365,9 +365,9 @@ public class SoftwareRenderer {
                 gBits = 0;
                 bBits = 0;
             }
-            pixelData[i] = (byte)((rBits << 5) | (gBits << 2) | (bBits << 0));
+            pixelData[i] = (byte) ((rBits << 5) | (gBits << 2) | (bBits << 0));
         }
-        
+
         return new Texture() {
             @Override
             public int width() {
@@ -393,7 +393,7 @@ public class SoftwareRenderer {
             }
         };
     }
-    
+
     public static Texture imageToTexture(BufferedImage image) {
         final int width = image.getWidth();
         final int height = image.getHeight();
@@ -708,7 +708,7 @@ public class SoftwareRenderer {
             new Vector4f(0, 0, -1, 1),
             new Vector4f(0, 0, 1, 1)
         };
-
+        
         private final float[] localVertices;
         private final Matrix4f projectionView = new Matrix4f();
         private final Matrix4f model = new Matrix4f();
@@ -796,21 +796,7 @@ public class SoftwareRenderer {
                     continue;
                 }
 
-                float v0invcw = 1f / this.tverts[v0 + CW];
-                float v1invcw = 1f / this.tverts[v1 + CW];
-                float v2invcw = 1f / this.tverts[v2 + CW];
-
-                float v0cxw = this.tverts[v0 + CX] * v0invcw;
-                float v0cyw = this.tverts[v0 + CY] * v0invcw;
-
-                float v1cxw = this.tverts[v1 + CX] * v1invcw;
-                float v1cyw = this.tverts[v1 + CY] * v1invcw;
-
-                float v2cxw = this.tverts[v2 + CX] * v2invcw;
-                float v2cyw = this.tverts[v2 + CY] * v2invcw;
-
-                float ccw = (v1cxw - v0cxw) * (v2cyw - v0cyw) - (v2cxw - v0cxw) * (v1cyw - v0cyw);
-                if (ccw <= 0f) {
+                if (!ccw(this.tverts, v0, v1, v2)) {
                     continue;
                 }
 
@@ -826,6 +812,24 @@ public class SoftwareRenderer {
             float[] resultVertices = Arrays.copyOf(this.vertices, this.verticesIndex);
             prepareForRasterization(resultVertices);
             return resultVertices;
+        }
+
+        private boolean ccw(float[] verts, int v0, int v1, int v2) {
+            float v0invcw = 1f / verts[v0 + CW];
+            float v1invcw = 1f / verts[v1 + CW];
+            float v2invcw = 1f / verts[v2 + CW];
+
+            float v0cxw = verts[v0 + CX] * v0invcw;
+            float v0cyw = verts[v0 + CY] * v0invcw;
+
+            float v1cxw = verts[v1 + CX] * v1invcw;
+            float v1cyw = verts[v1 + CY] * v1invcw;
+
+            float v2cxw = verts[v2 + CX] * v2invcw;
+            float v2cyw = verts[v2 + CY] * v2invcw;
+
+            float ccw = (v1cxw - v0cxw) * (v2cyw - v0cyw) - (v2cxw - v0cxw) * (v1cyw - v0cyw);
+            return ccw > 0f;
         }
 
         private boolean mustClip(int v) {
@@ -871,10 +875,10 @@ public class SoftwareRenderer {
                 //outputList.add(idxPrev);
                 inputList[inputListIndex] = idxPrev;
                 inputListIndex++;
-                float dpPrev = (clippingEdge.x() * this.vertices[(idxPrev * VERTEX_SIZE) + 0]) + (clippingEdge.y() * this.vertices[(idxPrev * VERTEX_SIZE) + 1]) + (clippingEdge.z() * this.vertices[(idxPrev * VERTEX_SIZE) + 2]) + (clippingEdge.w() * this.vertices[(idxPrev * VERTEX_SIZE) + 3]);
+                float dpPrev = calculateDp(clippingEdge, idxPrev);
                 for (int j = 1; j < inputListIndex; ++j) {
                     int idx = inputList[j];
-                    float dp = (clippingEdge.x() * this.vertices[(idx * VERTEX_SIZE) + 0]) + (clippingEdge.y() * this.vertices[(idx * VERTEX_SIZE) + 1]) + (clippingEdge.z() * this.vertices[(idx * VERTEX_SIZE) + 2]) + (clippingEdge.w() * this.vertices[(idx * VERTEX_SIZE) + 3]);
+                    float dp = calculateDp(clippingEdge, idx);
 
                     if (dpPrev >= 0) {
                         outputList[outputListIndex] = idxPrev;
@@ -927,27 +931,25 @@ public class SoftwareRenderer {
             processResultIndices(resultIndices, resultVertices);
         }
 
+        private float calculateDp(Vector4fc clippingEdge, int vi) {
+            vi *= VERTEX_SIZE;
+            float cx = this.vertices[vi + CX];
+            float cy = this.vertices[vi + CY];
+            float cz = this.vertices[vi + CZ];
+            float cw = this.vertices[vi + CW];
+            return (clippingEdge.x() * cx)
+                    + (clippingEdge.y() * cy)
+                    + (clippingEdge.z() * cz)
+                    + (clippingEdge.w() * cw);
+        }
+
         private void processResultIndices(int[] indices, float[] verts) {
             for (int j = 0; j < (indices.length / 3); j++) {
-                int v0 = indices[(j * 3) + 0];
-                int v1 = indices[(j * 3) + 1];
-                int v2 = indices[(j * 3) + 2];
+                int v0 = indices[(j * 3) + 0] * VERTEX_SIZE;
+                int v1 = indices[(j * 3) + 1] * VERTEX_SIZE;
+                int v2 = indices[(j * 3) + 2] * VERTEX_SIZE;
 
-                float v0cwinv = 1f / verts[(v0 * VERTEX_SIZE) + 3];
-                float v1cwinv = 1f / verts[(v1 * VERTEX_SIZE) + 3];
-                float v2cwinv = 1f / verts[(v2 * VERTEX_SIZE) + 3];
-
-                float v0cxw = verts[(v0 * VERTEX_SIZE) + 0] * v0cwinv;
-                float v0cyw = verts[(v0 * VERTEX_SIZE) + 1] * v0cwinv;
-
-                float v1cxw = verts[(v1 * VERTEX_SIZE) + 0] * v1cwinv;
-                float v1cyw = verts[(v1 * VERTEX_SIZE) + 1] * v1cwinv;
-
-                float v2cxw = verts[(v2 * VERTEX_SIZE) + 0] * v2cwinv;
-                float v2cyw = verts[(v2 * VERTEX_SIZE) + 1] * v2cwinv;
-
-                float ccw = (v1cxw - v0cxw) * (v2cyw - v0cyw) - (v2cxw - v0cxw) * (v1cyw - v0cyw);
-                if (ccw <= 0f) {
+                if (!ccw(verts, v0, v1, v2)) {
                     continue;
                 }
 
@@ -955,38 +957,41 @@ public class SoftwareRenderer {
                     this.vertices = Arrays.copyOf(this.vertices, (this.vertices.length * 2) + (VERTEX_SIZE * 3));
                 }
 
-                System.arraycopy(verts, v0 * VERTEX_SIZE, this.vertices, this.verticesIndex + (0 * VERTEX_SIZE), VERTEX_SIZE);
-                System.arraycopy(verts, v1 * VERTEX_SIZE, this.vertices, this.verticesIndex + (1 * VERTEX_SIZE), VERTEX_SIZE);
-                System.arraycopy(verts, v2 * VERTEX_SIZE, this.vertices, this.verticesIndex + (2 * VERTEX_SIZE), VERTEX_SIZE);
+                System.arraycopy(verts, v0, this.vertices, this.verticesIndex + (0 * VERTEX_SIZE), VERTEX_SIZE);
+                System.arraycopy(verts, v1, this.vertices, this.verticesIndex + (1 * VERTEX_SIZE), VERTEX_SIZE);
+                System.arraycopy(verts, v2, this.vertices, this.verticesIndex + (2 * VERTEX_SIZE), VERTEX_SIZE);
 
                 this.verticesIndex += (VERTEX_SIZE * 3);
             }
         }
 
         private void prepareForRasterization(float[] vertices) {
-            for (int v = 0; v < vertices.length / VERTEX_SIZE; v++) {
-                float cwinv = 1f / vertices[(v * VERTEX_SIZE) + CW_INV];
+            for (int v = 0; v < vertices.length; v += VERTEX_SIZE) {
+                float cwinv = 1f / vertices[v + CW_INV];
                 for (int i = 0; i < VERTEX_SIZE; i++) {
-                    vertices[(v * VERTEX_SIZE) + i] = vertices[(v * VERTEX_SIZE) + i] * cwinv;
+                    vertices[v + i] = vertices[v + i] * cwinv;
                 }
                 for (int i = CX; i <= CZ; i++) {
-                    vertices[(v * VERTEX_SIZE) + i] = (vertices[(v * VERTEX_SIZE) + i] + 1.0f) * 0.5f;
+                    vertices[v + i] = (vertices[v + i] + 1.0f) * 0.5f;
                 }
-                vertices[(v * VERTEX_SIZE) + CX] = vertices[(v * VERTEX_SIZE) + CX] * this.width;
-                vertices[(v * VERTEX_SIZE) + CY] = vertices[(v * VERTEX_SIZE) + CY] * this.height;
-                vertices[(v * VERTEX_SIZE) + CW_INV] = cwinv;
+                vertices[v + CX] = vertices[v + CX] * this.width;
+                vertices[v + CY] = vertices[v + CY] * this.height;
+                vertices[v + CW_INV] = cwinv;
             }
         }
 
-        private int interpolateVertex(int vA, int vB, float w0, float w1) {
+        private int interpolateVertex(int vai, int vbi, float w0, float w1) {
+            vai *= VERTEX_SIZE;
+            vbi *= VERTEX_SIZE;
+            
             if ((this.verticesIndex + VERTEX_SIZE) > this.vertices.length) {
                 this.vertices = Arrays.copyOf(this.vertices, (this.vertices.length * 2) + VERTEX_SIZE);
             }
 
             float[] output = new float[VERTEX_SIZE];
             for (int i = 0; i < VERTEX_SIZE; i++) {
-                float valueA = this.vertices[(vA * VERTEX_SIZE) + i];
-                float valueB = this.vertices[(vB * VERTEX_SIZE) + i];
+                float valueA = this.vertices[vai + i];
+                float valueB = this.vertices[vbi + i];
                 output[i] = (valueA * w0) + (valueB * w1);
             }
             System.arraycopy(output, 0, this.vertices, this.verticesIndex, output.length);
